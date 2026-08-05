@@ -1,269 +1,962 @@
-
-
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blur this sh*t - Privacy-focused image blurring</title>
-    <meta name="description" content="Quickly blur and redact parts of images for privacy. Client-side processing, no uploads." />
-    <meta name="author" content="Lovable" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<html lang="hy">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blur Image Tool</title>
+    <style>
+        :root {
+            --bg: #0f0f0f;
+            --card: #1a1a1a;
+            --accent: #6366f1;
+            --text: #ffffff;
+            --border: #333;
+        }
 
-    <meta property="og:title" content="Blur this sh*t - Privacy-focused image blurring" />
-    <meta property="og:description" content="Quickly blur and redact parts of images for privacy. Client-side processing, no uploads." />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@lovable_dev" />
-    
-    <script type="module" crossorigin src="/assets/index-BLw7mAY8.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-Bkl1ibkh.css">
-  
-<style>
-	@font-face {
-		font-family: 'CameraPlainVariable';
-		src: url('https://cdn.gpteng.co/mcp-widgets/v1/fonts/CameraPlainVariable.woff2') format('woff2');
-		font-weight: 100 900;
-		font-style: normal;
-		font-display: swap;
-	}
+        header { margin-bottom: 20px; text-align: center; }
+        h1 { font-size: 1.5rem; margin-bottom: 5px; }
+        p { color: #888; font-size: 0.9rem; }
 
-	#lovable-badge {
-		--badge-bg: #1b1b1b;
-		--badge-text: #c5c1b9;
-		--badge-text-hover: #dcdad5;
-		--badge-radius: 6px;
-		--badge-padding: 8px;
-		--badge-gap: 6px;
-		--badge-shadow: 
-			0 0 0 1px rgba(0, 0, 0, 0.88),
-			0 1px 0 0 rgba(0, 0, 0, 0.04),
-			0 2px 2px -1px rgba(0, 0, 0, 0.08),
-			0 4px 4px -2px rgba(0, 0, 0, 0.08),
-			0 8px 8px -4px rgba(0, 0, 0, 0.08),
-			0 16px 16px -8px rgba(0, 0, 0, 0.08);
-		--badge-transition-duration: 0.2s;
-		--badge-transition-easing: cubic-bezier(0.16, 1, 0.32, 1);
-		--focus-color: #575ECF;
-		--focus-offset: 2px;
-		--focus-width: 2px;
-		
-		position: fixed;
-		bottom: 12px;
-		right: 12px;
-		height: 24px;
-		display: flex;
-		align-items: center;
-		z-index: 1000000;
-		background-color: var(--badge-bg) !important;
-		color: var(--badge-text) !important;
-		border-radius: var(--badge-radius);
-		box-shadow: var(--badge-shadow) !important;
-		font-size: 12px;
-		font-family: CameraPlainVariable, "CameraPlainVariable Fallback", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-		font-weight: 400 !important;
-		text-transform: none !important;
-		font-feature-settings: normal !important;
-		transform: translateZ(0);
-		will-change: transform, opacity;
-	}
+        .container {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
 
-	#lovable-badge-cta {
-		display: flex;
-		align-items: center;
-		gap: var(--badge-gap);
-		padding: 0 var(--badge-padding);
-		height: 100%;
-		color: inherit;
-		text-decoration: none;
-		white-space: nowrap;
-		border-radius: var(--badge-radius) 0 0 var(--badge-radius);
-		transition: 
-			background-color var(--badge-transition-duration) ease,
-			color var(--badge-transition-duration) ease,
-			transform 0.1s ease;
-	}
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--card);
+        }
+        .upload-area:hover, .upload-area.dragover {
+            border-color: var(--accent);
+            background: #252525;
+        }
+        input[type="file"] { display: none; }
 
-	#lovable-badge-cta:hover {
-		background: rgba(255, 255, 255, 0.04);
-		color: var(--badge-text-hover);
-	}
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            background: var(--card);
+            padding: 15px;
+            border-radius: 12px;
+            align-items: center;
+            justify-content: space-between;
+        }
 
-	#lovable-badge-cta:active {
-		transform: scale(0.98);
-	}
+        .control-group { display: flex; align-items: center; gap: 10px; }
+        
+        label { font-size: 0.85rem; color: #ccc; white-space: nowrap; }
+        
+        input[type="range"] { accent-color: var(--accent); cursor: pointer; }
+        
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+        button:hover { opacity: 0.9; }
+        button.secondary { background: #333; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-	#lovable-badge-cta:focus {
-		outline: none;
-	}
+        /* Canvas Area */
+        .canvas-wrapper {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 12px;
+            background: #000;
+            display: none; /* Hidden until image loaded */
+            line-height: 0;
+        }
 
-	#lovable-badge-cta:focus-visible {
-		outline: var(--focus-width) solid var(--focus-color);
-		outline-offset: var(--focus-offset);
-		z-index: 1;
-	}
+        canvas {
+            width: 100%;
+            height: auto;
+            cursor: crosshair;
+            touch-action: none; /* Prevent scrolling while painting on mobile */
+        }
 
-	#lovable-badge-text {
-		line-height: 1;
-	}
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
 
-	#lovable-badge-divider {
-		width: 1px;
-		height: 24px;
-		background-color: rgba(255, 255, 255, 0.04);
-		flex-shrink: 0;
-	}
+    <header>
+        <h1>Blur This Sh*t</h1>
+        <p>Վերբեռնեք նկար, ընտրեք blur-ի ուժգնությունը և նկարեք մատով/մկնիկով</p>
+    </header>
 
-	#lovable-badge-close {
-		width: 24px;
-		height: 24px;
-		min-width: 24px;
-		min-height: 24px;
-		cursor: pointer;
-		background: none;
-		border: none;
-		padding: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: 0 var(--badge-radius) var(--badge-radius) 0;
-		flex-shrink: 0;
-		transition: 
-			background-color var(--badge-transition-duration) ease,
-			transform 0.1s ease;
-	}
+    <div class="container">
+        <!-- Upload -->
+        <div class="upload-area" id="dropZone">
+            <span>📁 Click or Drag & Drop image here</span>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
 
-	#lovable-badge-close:hover {
-		background: rgba(255, 255, 255, 0.04);
-	}
+        <!-- Controls -->
+        <div class="controls hidden" id="controls">
+            <div class="control-group">
+                <label for="brushSize">Size:</label>
+                <input type="range" id="brushSize" min="10" max="100" value="40">
+            </div>
+            <div class="control-group">
+                <label for="blurStrength">Blur:</label>
+                <input type="range" id="blurStrength" min="5" max="50" value="20">
+            </div>
+            <div class="control-group">
+                <button class="secondary" id="resetBtn">Reset</button>
+                <button id="downloadBtn">Download</button>
+            </div>
+        </div>
 
-	#lovable-badge-close:active {
-		transform: scale(0.92);
-	}
+        <!-- Canvas -->
+        <div class="canvas-wrapper" id="canvasWrapper">
+            <canvas id="editorCanvas"></canvas>
+        </div>
+    </div>
 
-	#lovable-badge-close:focus {
-		outline: none;
-	}
-
-	#lovable-badge-close:focus-visible {
-		outline: var(--focus-width) solid var(--focus-color);
-		outline-offset: calc(var(--focus-offset) * -1);
-		z-index: 1;
-	}
-
-	#lovable-badge-close svg path {
-		fill: var(--badge-text);
-		transition: fill var(--badge-transition-duration) ease;
-	}
-
-	#lovable-badge-close:hover svg path {
-		fill: var(--badge-text-hover);
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		#lovable-badge-cta,
-		#lovable-badge-close,
-		#lovable-badge-close svg path {
-			transition: none;
-		}
-		
-		#lovable-badge-cta:active,
-		#lovable-badge-close:active {
-			transform: none;
-		}
-	}
-
-	@media (prefers-contrast: high) {
-		#lovable-badge {
-			--badge-bg: #000;
-			--badge-text: #fff;
-			--badge-text-hover: #fff;
-			border: 2px solid currentColor;
-		}
-		
-		#lovable-badge-cta:focus-visible,
-		#lovable-badge-close:focus-visible {
-			outline-width: 3px;
-		}
-	}
-</style>
-<script defer src="/~flock.js" data-proxy-url="/~api/analytics"></script><meta name="twitter:title" content="Blur this sh*t - Privacy-focused image blurring"><meta name="twitter:description" content="Quickly blur and redact parts of images for privacy. Client-side processing, no uploads."><meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png"></head>
-
-  <body>
-    <div id="root"></div>
-  
-<aside
-	id="lovable-badge"
-	role="complementary"
-	dir="ltr"
-	lang="en"
-	aria-label="Edit with Lovable">
-	<a
-		id="lovable-badge-cta" 
-		target="_blank" 
-		href="https://lovable.dev/projects/lovp_0h4nw0zkw28r5sgzfk9tjvj8ef?utm_source=lovable-badge"
-		rel="noopener nofollow"
-		aria-label="Edit with Lovable">
-		<span id="lovable-badge-text">Edit with</span>
-		<svg xmlns="http://www.w3.org/2000/svg" width="52" height="16" fill="none" viewBox="0 0 52 16">
-  <path fill="#FCFBF8" fill-rule="evenodd" d="M20.318 5.25c.643 0 1.206.14 1.69.418a2.81 2.81 0 0 1 1.118 1.191c.266.513.4 1.115.4 1.807s-.134 1.296-.4 1.812a2.81 2.81 0 0 1-1.118 1.193c-.484.278-1.047.418-1.69.418s-1.208-.14-1.695-.418a2.85 2.85 0 0 1-1.125-1.193c-.262-.516-.393-1.12-.393-1.812s.131-1.294.393-1.807a2.848 2.848 0 0 1 1.125-1.191c.487-.279 1.052-.418 1.695-.418Zm0 1.425c-.27 0-.504.076-.7.228-.193.147-.34.37-.443.67-.102.295-.153.66-.153 1.093 0 .435.05.801.153 1.1.102.3.25.524.443.676.196.147.43.22.7.22.27 0 .502-.073.694-.22.193-.152.341-.375.443-.67.103-.299.153-.667.153-1.106 0-.65-.112-1.145-.337-1.481a1.08 1.08 0 0 0-.953-.51ZM32.7 5.25c.61 0 1.127.1 1.549.3.422.197.74.48.953.849.217.368.325.809.325 1.32v2.704c0 .29.02.562.062.812.044.245.108.4.19.466V12h-1.935a5.895 5.895 0 0 1-.105-.684 7.745 7.745 0 0 1-.02-.228 2.293 2.293 0 0 1-.151.203c-.205.242-.47.437-.793.584-.32.143-.685.215-1.094.215-.406 0-.77-.08-1.094-.24a1.845 1.845 0 0 1-.756-.682 1.984 1.984 0 0 1-.27-1.045c0-.606.178-1.069.535-1.388.356-.324.87-.534 1.542-.633l1.125-.16c.225-.032.403-.074.534-.123a.622.622 0 0 0 .288-.196.549.549 0 0 0 .093-.327.65.65 0 0 0-.11-.367.702.702 0 0 0-.32-.27c-.14-.07-.31-.105-.51-.105-.32 0-.576.083-.768.251-.193.164-.298.39-.314.676h-1.923c.016-.434.147-.82.393-1.155.25-.34.596-.604 1.039-.792.442-.189.954-.283 1.535-.283Zm.99 3.498a.98.98 0 0 1-.215.14 2.49 2.49 0 0 1-.584.178l-.473.092c-.315.061-.553.156-.713.283-.155.127-.233.305-.233.534 0 .23.084.412.252.547.168.135.383.203.645.203s.494-.058.694-.173c.201-.118.355-.282.461-.49.11-.21.166-.448.166-.714v-.6Zm4.526-2.375c.065-.125.138-.243.221-.349.197-.25.437-.44.719-.571.282-.135.6-.203.952-.203.528 0 .988.138 1.377.412.389.275.688.67.896 1.186.21.512.314 1.12.314 1.824 0 .7-.107 1.309-.32 1.825-.213.512-.518.906-.915 1.18-.393.275-.854.412-1.383.412-.352 0-.667-.062-.946-.184a1.832 1.832 0 0 1-.7-.554 2.2 2.2 0 0 1-.234-.383V12h-1.843V3h1.862v3.373Zm1.284.296c-.274 0-.51.085-.707.253-.192.163-.338.397-.436.7a3.376 3.376 0 0 0-.148 1.05c0 .406.05.759.148 1.058.098.299.243.53.436.694.197.164.433.246.707.246.279 0 .512-.082.7-.246.193-.164.336-.395.43-.694.099-.3.148-.652.148-1.058 0-.405-.05-.757-.147-1.056-.095-.299-.238-.53-.43-.694a1.015 1.015 0 0 0-.7-.253Zm9.416-1.419c.602 0 1.136.131 1.604.393.466.262.829.643 1.086 1.143.263.5.394 1.097.394 1.794 0 .25-.002.449-.006.596H47.51c.018.288.071.538.164.75a1.3 1.3 0 0 0 .491.596c.214.13.465.196.757.196.319 0 .583-.082.792-.246.209-.167.34-.403.393-.706h1.862a2.48 2.48 0 0 1-.485 1.235 2.54 2.54 0 0 1-1.051.805c-.439.188-.949.283-1.53.283-.655 0-1.225-.125-1.708-.375a2.672 2.672 0 0 1-1.13-1.143c-.267-.508-.4-1.137-.4-1.887 0-.712.14-1.327.418-1.843a2.86 2.86 0 0 1 1.155-1.186c.491-.27 1.051-.405 1.678-.405Zm-.044 1.345c-.274 0-.516.068-.725.203a1.29 1.29 0 0 0-.479.59 2.045 2.045 0 0 0-.132.498h2.562a1.873 1.873 0 0 0-.138-.602 1.061 1.061 0 0 0-.418-.516 1.243 1.243 0 0 0-.67-.173Z" clip-rule="evenodd"/>
-  <path fill="#FCFBF8" d="m26.605 9.995 1.342-4.566h1.924L27.628 12h-2.07l-2.33-6.57h1.98l1.397 4.565Zm-13.013.143h2.256c1.632 0 1.421 1.837 1.418 1.861h-5.603V3h1.93v7.138Zm31.516 1.861h-1.862V3h1.862v8.999Z"/>
-  <path fill="url(#a)" fill-rule="evenodd" d="M2.7 3c1.492 0 2.7 1.192 2.7 2.663v1.012h.9c1.49 0 2.7 1.192 2.7 2.662S7.791 12 6.3 12H0V5.663C0 4.193 1.209 3 2.7 3Z" clip-rule="evenodd"/>
-  <defs>
-    <radialGradient id="a" cx="0" cy="0" r="1" gradientTransform="matrix(-1.54236 7.07838 -10.231 -2.15602 4.627 5.022)" gradientUnits="userSpaceOnUse">
-      <stop offset=".106" stop-color="#FE7B02"/>
-      <stop offset=".394" stop-color="#FE3F21"/>
-      <stop offset=".608" stop-color="#F858BC"/>
-      <stop offset=".929" stop-color="#575ECF"/>
-    </radialGradient>
-  </defs>
-</svg>
-
-
-	</a>
-	
-	<span id="lovable-badge-divider" aria-hidden="true"></span>
-	
-	<button 
-		id="lovable-badge-close"
-		aria-label="Dismiss"
-		title="Dismiss"
-		type="button">
-		<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 16 16" aria-hidden="true">
-			<path d="M10.646 4.646a.5.5 0 1 1 .707.708L8.707 8l2.646 2.646a.5.5 0 1 1-.707.707L8 8.707l-2.646 2.646a.5.5 0 1 1-.708-.707L7.293 8 4.646 5.354a.5.5 0 1 1 .708-.708L8 7.293l2.646-2.647Z"/>
-		</svg>
-	</button>
-</aside>
 <script>
-	// Don't show the lovable-badge if the page is in an iframe or if it's being rendered by puppeteer (screenshot service)
-	if (window.self !== window.top || navigator.userAgent.includes('puppeteer')) {
-		var badge = document.getElementById('lovable-badge');
-		if (badge) {
-			badge.style.display = 'none';
-		}
-	}
+    /**
+     * Logic Overview:
+     * 1. Load original image into an offscreen canvas.
+     * 2. Display the original image on the main canvas.
+     * 3. On pointer move: Create a temporary clipped region, apply CSS filter blur 
+     *    via drawImage from the original source, and composite it onto the main canvas.
+     * This avoids heavy pixel manipulation libraries and works natively in modern browsers.
+     */
 
-	// Add click event listener to close button with animation
-	var closeButton = document.getElementById('lovable-badge-close');
-	if (closeButton) {
-		closeButton.addEventListener('click', function(event) {
-			event.preventDefault();
-			event.stopPropagation();
-			var badge = document.getElementById('lovable-badge');
-			if (badge) {
-				badge.classList.add('closing');
-				setTimeout(function() {
-					if (badge) {
-						badge.style.display = 'none';
-					}
-				}, 240);
-			}
-		});
-	}
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const controls = document.getElementById('controls');
+    const canvasWrapper = document.getElementById('canvasWrapper');
+    const canvas = document.getElementById('editorCanvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    
+    const brushSizeInput = document.getElementById('brushSize');
+    const blurStrengthInput = document.getElementById('blurStrength');
+    const resetBtn = document.getElementById('resetBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    let originalImage = null;
+    let isDrawing = false;
+    let lastPos = { x: 0, y: 0 };
+
+    // --- File Handling ---
+    dropZone.addEventListener('click', () => fileInput.click());
+    
+    ['dragenter', 'dragover'].forEach(e => 
+        dropZone.addEventListener(e, (ev) => { ev.preventDefault(); dropZone.classList.add('dragover'); })
+    );
+    ['dragleave', 'drop'].forEach(e => 
+        dropZone.addEventListener(e, (ev) => { ev.preventDefault(); dropZone.classList.remove('dragover'); })
+    );
+
+    dropZone.addEventListener('drop', (e) => handleFile(e.dataTransfer.files[0]));
+    fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+    function handleFile(file) {
+        if (!file || !file.type.startsWith('image/')) return;
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            originalImage = new Image();
+            originalImage.onload = initCanvas;
+            originalImage.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // --- Canvas Initialization ---
+    function initCanvas() {
+        // Set canvas resolution to match image exactly
+        canvas.width = originalImage.width;
+        canvas.height = originalImage.height;
+        
+        // Draw initial clean image
+        resetCanvas();
+        
+        // Show UI
+        dropZone.classList.add('hidden');
+        controls.classList.remove('hidden');
+        canvasWrapper.style.display = 'block';
+    }
+
+    function resetCanvas() {
+        if (!originalImage) return;
+        ctx.filter = 'none';
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.drawImage(originalImage, 0, 0);
+    }
+
+    // --- Drawing / Blurring Logic ---
+    function getPointerPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        
+        return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
+        };
+    }
+
+    function applyBlur(x, y, size, strength) {
+        ctx.save();
+        
+        // Create circular clipping path for the brush
+        ctx.beginPath();
+        ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+        ctx.clip();
+        
+        // Apply blur filter and redraw the ORIGINAL image only within the clip
+        // This effectively replaces the current pixels with blurred original pixels
+        ctx.filter = `blur(${strength}px)`;
+        ctx.drawImage(originalImage, 0, 0);
+        
+        ctx.restore();
+    }
+
+    function interpolateAndDraw(start, end, size, strength) {
+        const dist = Math.hypot(end.x - start.x, end.y - start.y);
+        const steps = Math.ceil(dist / (size / 4)); // Smooth interpolation
+        
+        for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            const x = start.x + (end.x - start.x) * t;
+            const y = start.y + (end.y - start.y) * t;
+            applyBlur(x, y, size, strength);
+        }
+    }
+
+    // --- Event Listeners for Painting ---
+    const startPaint = (e) => {
+        if (!originalImage) return;
+        isDrawing = true;
+        lastPos = getPointerPos(e);
+        // Apply single dot immediately on click/tap
+        const size = parseInt(brushSizeInput.value);
+        const strength = parseInt(blurStrengthInput.value);
+        applyBlur(lastPos.x, lastPos.y, size, strength);
+    };
+
+    const paint = (e) => {
+        if (!isDrawing) return;
+        e.preventDefault(); // Stop scroll on mobile
+        
+        const currentPos = getPointerPos(e);
+        const size = parseInt(brushSizeInput.value);
+        const strength = parseInt(blurStrengthInput.value);
+        
+        interpolateAndDraw(lastPos, currentPos, size, strength);
+        lastPos = currentPos;
+    };
+
+    const stopPaint = () => { isDrawing = false; };
+
+    // Mouse
+    canvas.addEventListener('mousedown', startPaint);
+    window.addEventListener('mousemove', paint);
+    window.addEventListener('mouseup', stopPaint);
+
+    // Touch
+    canvas.addEventListener('touchstart', startPaint, { passive: false });
+    canvas.addEventListener('touchmove', paint, { passive: false });
+    window.addEventListener('touchend', stopPaint);
+
+    // --- Controls ---
+    resetBtn.addEventListener('click', resetCanvas);
+    
+    downloadBtn.addEventListener('click', () => {
+        if (!originalImage) return;
+        const link = document.createElement('a');
+        link.download = 'blurred-image.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    });
+
 </script>
 </body>
 </html>
+
+<!--
+<!DOCTYPE html>
+<html lang="hy">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blur This Shxt - Պղտորեցրու սա</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+            animation: rotate 30s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 20px;
+            padding: 60px 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: rgba(102, 126, 234, 0.05);
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: rgba(118, 75, 162, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: rgba(118, 75, 162, 0.15);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .upload-hint {
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .control-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95em;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            border: 3px solid #667eea;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 2px solid #e0e0e0;
+            font-size: 1em;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .blur-value {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .canvas-container {
+            position: relative;
+            margin-bottom: 30px;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            background: #f0f0f0;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .placeholder {
+            color: #999;
+            font-size: 1.2em;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            min-width: 150px;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #ff4757;
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 71, 87, 0.6);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .upload-area {
+                padding: 40px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔒 Blur This Shxt</h1>
+        <p class="subtitle">Պղտորեցրու քո նկարը վայրկյանների ընթացքում</p>
+
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📸</div>
+            <div class="upload-text">Քաշիր և թող այստեղ կամ սեղմիր ընտրելու համար</div>
+            <div class="upload-hint">Աջակցվող ֆորմատներ: JPG, PNG, WebP</div>
+        </div>
+        <input type="file" class="file-input" id="fileInput" accept="image/*">
+
+        <div class="controls">
+            <div class="control-group">
+                <label>Պղտորման չափը: <span class="blur-value" id="blurValue">10px</span></label>
+                <input type="range" id="blurRange" min="0" max="50" value="10" step="1">
+            </div>
+            <div class="control-group">
+                <label>Պղտորման տեսակը</label>
+                <select id="blurType">
+                    <option value="gaussian">Գաուսյան (Gaussian)</option>
+                    <option value="pixelate">Պիկսելացված (Pixelate)</option>
+                    <option value="motion">Շարժման (Motion)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="canvas-container" id="canvasContainer">
+            <div class="placeholder" id="placeholder">
+                📤 Վերբեռնիր նկար սկսելու համար
+            </div>
+            <canvas id="canvas" style="display: none;"></canvas>
+        </div>
+
+        <div class="actions">
+            <button class="btn-primary" id="applyBlurBtn" disabled>Կիրառել պղտորում</button>
+            <button class="btn-secondary" id="downloadBtn" disabled>Ներբեռնել</button>
+            <button class="btn-danger" id="resetBtn" disabled>Վերակայել</button>
+        </div>
+    </div>
+
+    <script>
+        class BlurApp {
+            constructor() {
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.originalImage = null;
+                this.currentImage = null;
+                this.blurAmount = 10;
+                this.blurType = 'gaussian';
+                
+                this.initElements();
+                this.bindEvents();
+            }
+
+            initElements() {
+                this.uploadArea = document.getElementById('uploadArea');
+                this.fileInput = document.getElementById('fileInput');
+                this.blurRange = document.getElementById('blurRange');
+                this.blurValue = document.getElementById('blurValue');
+                this.blurType = document.getElementById('blurType');
+                this.canvasContainer = document.getElementById('canvasContainer');
+                this.placeholder = document.getElementById('placeholder');
+                this.applyBlurBtn = document.getElementById('applyBlurBtn');
+                this.downloadBtn = document.getElementById('downloadBtn');
+                this.resetBtn = document.getElementById('resetBtn');
+            }
+
+            bindEvents() {
+                // File upload events
+                this.uploadArea.addEventListener('click', () => this.fileInput.click());
+                this.fileInput.addEventListener('change', (e) => this.handleFileSelect(e.target.files[0]));
+                
+                // Drag and drop events
+                this.uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    this.uploadArea.classList.add('dragover');
+                });
+                
+                this.uploadArea.addEventListener('dragleave', () => {
+                    this.uploadArea.classList.remove('dragover');
+                });
+                
+                this.uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    this.uploadArea.classList.remove('dragover');
+                    const file = e.dataTransfer.files[0];
+                    if (file) this.handleFileSelect(file);
+                });
+
+                // Control events
+                this.blurRange.addEventListener('input', (e) => {
+                    this.blurAmount = parseInt(e.target.value);
+                    this.blurValue.textContent = `${this.blurAmount}px`;
+                });
+
+                this.blurType.addEventListener('change', (e) => {
+                    this.blurType = e.target.value;
+                });
+
+                // Button events
+                this.applyBlurBtn.addEventListener('click', () => this.applyBlur());
+                this.downloadBtn.addEventListener('click', () => this.downloadImage());
+                this.resetBtn.addEventListener('click', () => this.resetImage());
+            }
+
+            handleFileSelect(file) {
+                if (!file || !file.type.match('image.*')) {
+                    alert('Խնդրում ենք ընտրել պատկերային ֆայլ');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        this.originalImage = img;
+                        this.currentImage = img;
+                        this.displayImage(img);
+                        this.enableControls();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+
+            displayImage(img) {
+                const maxWidth = this.canvasContainer.clientWidth - 40;
+                const maxHeight = 600;
+                
+                let width = img.width;
+                let height = img.height;
+                
+                if (width > maxWidth) {
+                    height = (maxWidth / width) * height;
+                    width = maxWidth;
+                }
+                
+                if (height > maxHeight) {
+                    width = (maxHeight / height) * width;
+                    height = maxHeight;
+                }
+                
+                this.canvas.width = width;
+                this.canvas.height = height;
+                this.ctx.drawImage(img, 0, 0, width, height);
+                this.canvas.style.display = 'block';
+                this.placeholder.style.display = 'none';
+            }
+
+            applyBlur() {
+                if (!this.currentImage) return;
+                
+                const imageData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+                let blurredData;
+                
+                switch(this.blurType) {
+                    case 'gaussian':
+                        blurredData = this.applyGaussianBlur(imageData, this.blurAmount);
+                        break;
+                    case 'pixelate':
+                        blurredData = this.applyPixelate(imageData, this.blurAmount);
+                        break;
+                    case 'motion':
+                        blurredData = this.applyMotionBlur(imageData, this.blurAmount);
+                        break;
+                    default:
+                        blurredData = imageData;
+                }
+                
+                this.ctx.putImageData(blurredData, 0, 0);
+            }
+
+            applyGaussianBlur(imageData, radius) {
+                // Simple box blur approximation (multiple passes for gaussian-like effect)
+                let data = new Uint8ClampedArray(imageData.data);
+                const passes = Math.min(3, Math.max(1, Math.floor(radius / 3)));
+                const boxRadius = Math.floor(radius / passes);
+                
+                for (let pass = 0; pass < passes; pass++) {
+                    data = this.boxBlur(data, imageData.width, imageData.height, boxRadius);
+                }
+                
+                return new ImageData(data, imageData.width, imageData.height);
+            }
+
+            boxBlur(data, width, height, radius) {
+                const result = new Uint8ClampedArray(data);
+                const size = width * height;
+                
+                // Horizontal pass
+                for (let i = 0; i < size; i++) {
+                    const y = Math.floor(i / width);
+                    const x = i % width;
+                    
+                    let r = 0, g = 0, b = 0, a = 0, count = 0;
+                    
+                    for (let dx = -radius; dx <= radius; dx++) {
+                        const nx = x + dx;
+                        if (nx >= 0 && nx < width) {
+                            const idx = (y * width + nx) * 4;
+                            r += data[idx];
+                            g += data[idx + 1];
+                            b += data[idx + 2];
+                            a += data[idx + 3];
+                            count++;
+                        }
+                    }
+                    
+                    const idx = i * 4;
+                    result[idx] = r / count;
+                    result[idx + 1] = g / count;
+                    result[idx + 2] = b / count;
+                    result[idx + 3] = a / count;
+                }
+                
+                // Vertical pass
+                const verticalResult = new Uint8ClampedArray(result);
+                for (let i = 0; i < size; i++) {
+                    const y = Math.floor(i / width);
+                    const x = i % width;
+                    
+                    let r = 0, g = 0, b = 0, a = 0, count = 0;
+                    
+                    for (let dy = -radius; dy <= radius; dy++) {
+                        const ny = y + dy;
+                        if (ny >= 0 && ny < height) {
+                            const idx = (ny * width + x) * 4;
+                            r += result[idx];
+                            g += result[idx + 1];
+                            b += result[idx + 2];
+                            a += result[idx + 3];
+                            count++;
+                        }
+                    }
+                    
+                    const idx = i * 4;
+                    verticalResult[idx] = r / count;
+                    verticalResult[idx + 1] = g / count;
+                    verticalResult[idx + 2] = b / count;
+                    verticalResult[idx + 3] = a / count;
+                }
+                
+                return verticalResult;
+            }
+
+            applyPixelate(imageData, pixelSize) {
+                const data = imageData.data;
+                const width = imageData.width;
+                const height = imageData.height;
+                const result = new Uint8ClampedArray(data);
+                const size = Math.max(2, pixelSize);
+                
+                for (let y = 0; y < height; y += size) {
+                    for (let x = 0; x < width; x += size) {
+                        // Calculate average color of the block
+                        let r = 0, g = 0, b = 0, a = 0, count = 0;
+                        
+                        for (let dy = 0; dy < size && (y + dy) < height; dy++) {
+                            for (let dx = 0; dx < size && (x + dx) < width; dx++) {
+                                const idx = ((y + dy) * width + (x + dx)) * 4;
+                                r += data[idx];
+                                g += data[idx + 1];
+                                b += data[idx + 2];
+                                a += data[idx + 3];
+                                count++;
+                            }
+                        }
+                        
+                        r = Math.round(r / count);
+                        g = Math.round(g / count);
+                        b = Math.round(b / count);
+                        a = Math.round(a / count);
+                        
+                        // Apply average color to the entire block
+                        for (let dy = 0; dy < size && (y + dy) < height; dy++) {
+                            for (let dx = 0; dx < size && (x + dx) < width; dx++) {
+                                const idx = ((y + dy) * width + (x + dx)) * 4;
+                                result[idx] = r;
+                                result[idx + 1] = g;
+                                result[idx + 2] = b;
+                                result[idx + 3] = a;
+                            }
+                        }
+                    }
+                }
+                
+                return new ImageData(result, width, height);
+            }
+
+            applyMotionBlur(imageData, intensity) {
+                const data = imageData.data;
+                const width = imageData.width;
+                const height = imageData.height;
+                const result = new Uint8ClampedArray(data);
+                const radius = Math.floor(intensity / 2);
+                
+                // Horizontal motion blur
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        let r = 0, g = 0, b = 0, a = 0, count = 0;
+                        
+                        for (let dx = -radius; dx <= radius; dx++) {
+                            const nx = x + dx;
+                            if (nx >= 0 && nx < width) {
+                                const idx = (y * width + nx) * 4;
+                                r += data[idx];
+                                g += data[idx + 1];
+                                b += data[idx + 2];
+                                a += data[idx + 3];
+                                count++;
+                            }
+                        }
+                        
+                        const idx = (y * width + x) * 4;
+                        result[idx] = r / count;
+                        result[idx + 1] = g / count;
+                        result[idx + 2] = b / count;
+                        result[idx + 3] = a / count;
+                    }
+                }
+                
+                return new ImageData(result, width, height);
+            }
+
+            downloadImage() {
+                if (!this.currentImage) return;
+                
+                const link = document.createElement('a');
+                link.download = 'blurred-image.png';
+                link.href = this.canvas.toDataURL('image/png');
+                link.click();
+            }
+
+            resetImage() {
+                if (!this.originalImage) return;
+                this.currentImage = this.originalImage;
+                this.displayImage(this.originalImage);
+                this.blurRange.value = 10;
+                this.blurAmount = 10;
+                this.blurValue.textContent = '10px';
+                this.blurType.value = 'gaussian';
+                this.blurType = 'gaussian';
+            }
+
+            enableControls() {
+                this.applyBlurBtn.disabled = false;
+                this.downloadBtn.disabled = false;
+                this.resetBtn.disabled = false;
+            }
+        }
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', () => {
+            new BlurApp();
+        });
+    </script>
+</body>
+</html> 
+-->
