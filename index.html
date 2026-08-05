@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BIT - Blur Internet Tool</title>
+    <title>Blur This Shxt Pro - Պրոֆեսիոնալ Պղտորեցում</title>
     <style>
         :root {
             --primary: #667eea;
@@ -43,9 +43,11 @@
             .app-container {
                 grid-template-columns: 1fr;
             }
+            .sidebar-left { order: 2; }
+            .main-content { order: 1; }
+            .sidebar-right { order: 3; }
         }
 
-        /* Sidebar Panels */
         .sidebar {
             background: rgba(255,255,255,0.1);
             backdrop-filter: blur(20px);
@@ -56,28 +58,6 @@
             max-height: 95vh;
         }
 
-        .sidebar-left {
-            order: 1;
-        }
-
-        .main-content {
-            order: 2;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .sidebar-right {
-            order: 3;
-        }
-
-        @media (max-width: 1200px) {
-            .sidebar-left { order: 2; }
-            .main-content { order: 1; }
-            .sidebar-right { order: 3; }
-        }
-
-        /* Panel Headers */
         .panel-title {
             font-size: 1.2em;
             font-weight: 700;
@@ -94,7 +74,6 @@
             font-size: 1.5em;
         }
 
-        /* Upload Zone */
         .upload-zone {
             border: 2px dashed rgba(255,255,255,0.4);
             border-radius: 15px;
@@ -117,7 +96,6 @@
             margin-bottom: 10px;
         }
 
-        /* Buttons */
         .btn {
             padding: 10px 20px;
             border: none;
@@ -134,26 +112,23 @@
             width: 100%;
             justify-content: center;
             margin-bottom: 8px;
+            color: white;
         }
 
         .btn-primary {
             background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
         }
 
         .btn-success {
             background: var(--success);
-            color: white;
         }
 
         .btn-danger {
             background: var(--danger);
-            color: white;
         }
 
         .btn-warning {
             background: var(--warning);
-            color: white;
         }
 
         .btn-outline {
@@ -167,7 +142,17 @@
             box-shadow: 0 5px 20px rgba(0,0,0,0.3);
         }
 
-        /* Tool Sections */
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
         .tool-section {
             margin-bottom: 25px;
         }
@@ -180,7 +165,6 @@
             margin-bottom: 10px;
         }
 
-        /* Canvas Area */
         .canvas-container {
             background: rgba(255,255,255,0.1);
             border-radius: 20px;
@@ -205,7 +189,6 @@
             text-align: center;
         }
 
-        /* Image Gallery */
         .image-gallery {
             display: flex;
             flex-wrap: wrap;
@@ -248,13 +231,14 @@
             font-size: 10px;
             cursor: pointer;
             display: none;
+            line-height: 18px;
+            text-align: center;
         }
 
         .gallery-item:hover .remove-btn {
             display: block;
         }
 
-        /* Presets */
         .preset-card {
             background: rgba(255,255,255,0.1);
             border-radius: 10px;
@@ -275,10 +259,23 @@
             background: rgba(102,126,234,0.2);
         }
 
-        /* Sliders */
         input[type="range"] {
             width: 100%;
             margin: 10px 0;
+            -webkit-appearance: none;
+            height: 6px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
         }
 
         select {
@@ -289,6 +286,11 @@
             color: white;
             border: 1px solid rgba(255,255,255,0.2);
             margin-bottom: 10px;
+        }
+
+        select option {
+            background: #2d3436;
+            color: white;
         }
 
         .range-group {
@@ -302,7 +304,6 @@
             margin-bottom: 5px;
         }
 
-        /* Preview */
         .preview-section {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -319,7 +320,6 @@
             color: rgba(255,255,255,0.7);
         }
 
-        /* Notification */
         .notification {
             position: fixed;
             bottom: 20px;
@@ -331,10 +331,23 @@
             transform: translateX(150%);
             transition: transform 0.3s;
             z-index: 1000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
 
         .notification.show {
             transform: translateX(0);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .action-buttons .btn {
+            flex: 1;
+            min-width: 120px;
         }
     </style>
 </head>
@@ -366,10 +379,10 @@
             <div class="tool-section">
                 <h3>🎨 Blur Տեսակ</h3>
                 <select id="blurType">
-                    <option value="gaussian">Gaussian</option>
-                    <option value="motion">Motion</option>
-                    <option value="pixel">Pixel</option>
-                    <option value="mosaic">Mosaic</option>
+                    <option value="gaussian">Գաուսյան (Gaussian)</option>
+                    <option value="motion">Շարժման (Motion)</option>
+                    <option value="pixel">Պիքսել (Pixel)</option>
+                    <option value="mosaic">Մոզաիկ (Mosaic)</option>
                 </select>
             </div>
 
@@ -391,7 +404,7 @@
 
             <div class="tool-section">
                 <h3>✂️ Ընտրության Գործիք</h3>
-                <button class="btn btn-outline selection-tool" data-tool="rectangle">
+                <button class="btn btn-outline selection-tool active" data-tool="rectangle">
                     ⬜ Ուղղանկյուն
                 </button>
                 <button class="btn btn-outline selection-tool" data-tool="circle">
@@ -406,7 +419,7 @@
         <!-- Main Content -->
         <div class="main-content">
             <div style="text-align:center; padding: 20px 0;">
-                <h1 style="background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 2.5em;">
+                <h1 style="background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 2.5em; background-clip: text;">
                     🔒 Blur This Shxt Pro
                 </h1>
                 <p style="color: rgba(255,255,255,0.6);">Պրոֆեսիոնալ պղտորեցման գործիք</p>
@@ -417,10 +430,10 @@
                     📤 Վերբեռնիր նկար կամ տեղադրիր Ctrl+V
                 </div>
                 <canvas id="mainCanvas" style="display:none;"></canvas>
-                <canvas id="selectionCanvas" style="display:none; position:absolute; top:0; left:0;"></canvas>
+                <canvas id="selectionCanvas" style="display:none; position:absolute; top:0; left:0; cursor:crosshair;"></canvas>
             </div>
 
-            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <div class="action-buttons">
                 <button class="btn btn-primary" id="applyBlurBtn" disabled>
                     ✨ Կիրառել Պղտորում
                 </button>
@@ -433,17 +446,6 @@
                 <button class="btn btn-danger" id="clearAllBtn">
                     🗑️ Մաքրել բոլորը
                 </button>
-            </div>
-
-            <div class="preview-section" style="display:none;" id="previewSection">
-                <div class="preview-box">
-                    <h4>📸 Original</h4>
-                    <canvas id="originalPreview" style="max-width:100%; border-radius:10px;"></canvas>
-                </div>
-                <div class="preview-box">
-                    <h4>✨ Result</h4>
-                    <canvas id="resultPreview" style="max-width:100%; border-radius:10px;"></canvas>
-                </div>
             </div>
         </div>
 
@@ -503,10 +505,10 @@
                 this.selections = [];
                 this.startX = 0;
                 this.startY = 0;
+                this.originalImageData = null;
                 
                 this.initElements();
                 this.bindEvents();
-                this.loadFaceDetectionAPI();
             }
 
             initElements() {
@@ -515,20 +517,17 @@
                 this.cameraInput = document.getElementById('cameraInput');
                 this.mainCanvas = document.getElementById('mainCanvas');
                 this.selectionCanvas = document.getElementById('selectionCanvas');
-                this.ctx = this.mainCanvas.getContext('2d');
+                this.ctx = this.mainCanvas.getContext('2d', { willReadFrequently: true });
                 this.selCtx = this.selectionCanvas.getContext('2d');
                 this.imageGallery = document.getElementById('imageGallery');
                 this.placeholder = document.getElementById('placeholder');
-                this.previewSection = document.getElementById('previewSection');
                 this.notification = document.getElementById('notification');
                 
-                // Controls
                 this.blurType = document.getElementById('blurType');
                 this.intensity = document.getElementById('intensity');
                 this.radius = document.getElementById('radius');
                 this.direction = document.getElementById('direction');
                 
-                // Buttons
                 this.applyBlurBtn = document.getElementById('applyBlurBtn');
                 this.downloadBtn = document.getElementById('downloadBtn');
                 this.resetBtn = document.getElementById('resetBtn');
@@ -541,25 +540,43 @@
             }
 
             bindEvents() {
-                // Upload
-                this.uploadZone.addEventListener('click', () => this.fileInput.click());
-                this.fileInput.addEventListener('change', (e) => this.handleFiles(e.target.files));
+                // Upload zone click
+                this.uploadZone.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.fileInput.click();
+                });
                 
-                // Drag & Drop
+                // File input change
+                this.fileInput.addEventListener('change', (e) => {
+                    if (e.target.files.length > 0) {
+                        this.handleFiles(e.target.files);
+                        this.fileInput.value = '';
+                    }
+                });
+                
+                // Drag and drop
                 this.uploadZone.addEventListener('dragover', (e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     this.uploadZone.classList.add('dragover');
                 });
-                this.uploadZone.addEventListener('dragleave', () => {
+                
+                this.uploadZone.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     this.uploadZone.classList.remove('dragover');
                 });
+                
                 this.uploadZone.addEventListener('drop', (e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     this.uploadZone.classList.remove('dragover');
-                    this.handleFiles(e.dataTransfer.files);
+                    if (e.dataTransfer.files.length > 0) {
+                        this.handleFiles(e.dataTransfer.files);
+                    }
                 });
 
-                // Clipboard
+                // Clipboard paste
                 document.addEventListener('paste', (e) => this.handlePaste(e));
                 this.pasteBtn.addEventListener('click', () => {
                     this.showNotification('Օգտագործեք Ctrl+V նկար տեղադրելու համար');
@@ -567,7 +584,12 @@
 
                 // Camera
                 this.cameraBtn.addEventListener('click', () => this.cameraInput.click());
-                this.cameraInput.addEventListener('change', (e) => this.handleFiles(e.target.files));
+                this.cameraInput.addEventListener('change', (e) => {
+                    if (e.target.files.length > 0) {
+                        this.handleFiles(e.target.files);
+                        this.cameraInput.value = '';
+                    }
+                });
 
                 // Blur type change
                 this.blurType.addEventListener('change', () => this.updateControlVisibility());
@@ -575,9 +597,9 @@
                 // Selection tools
                 document.querySelectorAll('.selection-tool').forEach(btn => {
                     btn.addEventListener('click', (e) => {
-                        this.selectionTool = e.target.dataset.tool;
+                        this.selectionTool = e.currentTarget.dataset.tool;
                         document.querySelectorAll('.selection-tool').forEach(b => b.classList.remove('active'));
-                        e.target.classList.add('active');
+                        e.currentTarget.classList.add('active');
                     });
                 });
 
@@ -585,10 +607,44 @@
                 this.selectionCanvas.addEventListener('mousedown', (e) => this.startSelection(e));
                 this.selectionCanvas.addEventListener('mousemove', (e) => this.updateSelection(e));
                 this.selectionCanvas.addEventListener('mouseup', (e) => this.endSelection(e));
+                this.selectionCanvas.addEventListener('mouseleave', () => {
+                    if (this.isDrawing) this.isDrawing = false;
+                });
+
+                // Touch events for mobile
+                this.selectionCanvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    const mouseEvent = new MouseEvent('mousedown', {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY
+                    });
+                    this.selectionCanvas.dispatchEvent(mouseEvent);
+                });
+                
+                this.selectionCanvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    const mouseEvent = new MouseEvent('mousemove', {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY
+                    });
+                    this.selectionCanvas.dispatchEvent(mouseEvent);
+                });
+                
+                this.selectionCanvas.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    const mouseEvent = new MouseEvent('mouseup', {});
+                    this.selectionCanvas.dispatchEvent(mouseEvent);
+                });
 
                 // Presets
                 document.querySelectorAll('.preset-card').forEach(card => {
-                    card.addEventListener('click', () => this.applyPreset(card.dataset.preset));
+                    card.addEventListener('click', () => {
+                        document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('active'));
+                        card.classList.add('active');
+                        this.applyPreset(card.dataset.preset);
+                    });
                 });
 
                 // Buttons
@@ -626,24 +682,44 @@
                 for (let file of files) {
                     if (!file.type.match('image.*')) continue;
                     
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const img = new Image();
-                        img.onload = () => {
-                            this.images.push({
-                                image: img,
-                                dataUrl: e.target.result,
-                                id: Date.now() + Math.random()
-                            });
-                            this.updateGallery();
-                            if (this.images.length === 1) {
-                                this.selectImage(0);
-                            }
-                        };
-                        img.src = e.target.result;
-                    };
-                    reader.readAsDataURL(file);
+                    try {
+                        const dataUrl = await this.readFileAsDataURL(file);
+                        const img = await this.loadImage(dataUrl);
+                        
+                        this.images.push({
+                            image: img,
+                            dataUrl: dataUrl,
+                            id: Date.now() + Math.random()
+                        });
+                        
+                        this.updateGallery();
+                        if (this.images.length === 1) {
+                            this.selectImage(0);
+                        }
+                        this.showNotification(`✅ Նկարը ավելացված է (${this.images.length})`);
+                    } catch (error) {
+                        console.error('Error loading image:', error);
+                        this.showNotification('❌ Սխալ նկարը բեռնելիս');
+                    }
                 }
+            }
+
+            readFileAsDataURL(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            loadImage(src) {
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.onload = () => resolve(img);
+                    img.onerror = reject;
+                    img.src = src;
+                });
             }
 
             async handlePaste(e) {
@@ -654,7 +730,7 @@
                     if (item.type.match('image.*')) {
                         const file = item.getAsFile();
                         await this.handleFiles([file]);
-                        this.showNotification('✅ Նկարը տեղադրված է');
+                        this.showNotification('✅ Նկարը տեղադրված է clipboard-ից');
                     }
                 }
             }
@@ -668,23 +744,33 @@
                         <img src="${img.dataUrl}" alt="Image ${index + 1}">
                         <button class="remove-btn">×</button>
                     `;
-                    div.addEventListener('click', () => this.selectImage(index));
+                    
+                    div.addEventListener('click', (e) => {
+                        if (!e.target.classList.contains('remove-btn')) {
+                            this.selectImage(index);
+                        }
+                    });
+                    
                     div.querySelector('.remove-btn').addEventListener('click', (e) => {
                         e.stopPropagation();
                         this.removeImage(index);
                     });
+                    
                     this.imageGallery.appendChild(div);
                 });
             }
 
             selectImage(index) {
+                if (index < 0 || index >= this.images.length) return;
+                
                 this.currentImageIndex = index;
                 const img = this.images[index].image;
                 this.displayImage(img);
+                this.saveOriginalImageData();
                 this.updateGallery();
                 this.enableControls();
                 this.selections = [];
-                this.updatePreview();
+                this.clearSelectionCanvas();
             }
 
             removeImage(index) {
@@ -702,7 +788,7 @@
             }
 
             displayImage(img) {
-                const maxWidth = 800;
+                const maxWidth = Math.min(800, window.innerWidth - 100);
                 const maxHeight = 500;
                 let width = img.width;
                 let height = img.height;
@@ -721,10 +807,25 @@
                 this.selectionCanvas.width = width;
                 this.selectionCanvas.height = height;
                 
+                this.ctx.clearRect(0, 0, width, height);
                 this.ctx.drawImage(img, 0, 0, width, height);
+                
                 this.mainCanvas.style.display = 'block';
                 this.selectionCanvas.style.display = 'block';
                 this.placeholder.style.display = 'none';
+                
+                // Position selection canvas
+                const container = document.getElementById('canvasContainer');
+                this.selectionCanvas.style.position = 'absolute';
+                this.selectionCanvas.style.top = '20px';
+                this.selectionCanvas.style.left = '50%';
+                this.selectionCanvas.style.transform = 'translateX(-50%)';
+            }
+
+            saveOriginalImageData() {
+                this.originalImageData = this.ctx.getImageData(
+                    0, 0, this.mainCanvas.width, this.mainCanvas.height
+                );
             }
 
             clearCanvas() {
@@ -733,44 +834,65 @@
                 this.mainCanvas.style.display = 'none';
                 this.selectionCanvas.style.display = 'none';
                 this.placeholder.style.display = 'block';
+                this.originalImageData = null;
                 this.disableControls();
             }
 
+            clearSelectionCanvas() {
+                this.selCtx.clearRect(0, 0, this.selectionCanvas.width, this.selectionCanvas.height);
+            }
+
             startSelection(e) {
-                if (!this.images.length) return;
+                if (this.currentImageIndex === -1) return;
                 this.isDrawing = true;
                 const rect = this.selectionCanvas.getBoundingClientRect();
-                this.startX = e.clientX - rect.left;
-                this.startY = e.clientY - rect.top;
+                this.startX = (e.clientX - rect.left) * (this.selectionCanvas.width / rect.width);
+                this.startY = (e.clientY - rect.top) * (this.selectionCanvas.height / rect.height);
             }
 
             updateSelection(e) {
                 if (!this.isDrawing) return;
                 const rect = this.selectionCanvas.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
+                const x = (e.clientX - rect.left) * (this.selectionCanvas.width / rect.width);
+                const y = (e.clientY - rect.top) * (this.selectionCanvas.height / rect.height);
                 
                 this.selCtx.clearRect(0, 0, this.selectionCanvas.width, this.selectionCanvas.height);
-                this.selCtx.strokeStyle = '#667eea';
+                this.selCtx.strokeStyle = '#00ff00';
                 this.selCtx.lineWidth = 2;
                 this.selCtx.setLineDash([5, 5]);
                 
                 if (this.selectionTool === 'rectangle') {
-                    this.selCtx.strokeRect(this.startX, this.startY, x - this.startX, y - this.startY);
+                    this.selCtx.strokeRect(
+                        Math.min(this.startX, x),
+                        Math.min(this.startY, y),
+                        Math.abs(x - this.startX),
+                        Math.abs(y - this.startY)
+                    );
                 } else if (this.selectionTool === 'circle') {
                     const radius = Math.sqrt(Math.pow(x - this.startX, 2) + Math.pow(y - this.startY, 2));
                     this.selCtx.beginPath();
                     this.selCtx.arc(this.startX, this.startY, radius, 0, Math.PI * 2);
                     this.selCtx.stroke();
+                } else if (this.selectionTool === 'freehand') {
+                    this.selCtx.setLineDash([]);
+                    this.selCtx.lineWidth = 20;
+                    this.selCtx.strokeStyle = 'rgba(0, 255, 0, 0.5)';
+                    this.selCtx.beginPath();
+                    this.selCtx.moveTo(this.startX, this.startY);
+                    this.selCtx.lineTo(x, y);
+                    this.selCtx.stroke();
                 }
+                
+                this.drawAllSelections();
             }
 
             endSelection(e) {
                 if (!this.isDrawing) return;
                 this.isDrawing = false;
+                
                 const rect = this.selectionCanvas.getBoundingClientRect();
-                const endX = e.clientX - rect.left;
-                const endY = e.clientY - rect.top;
+                const endX = (e.clientX - rect.left) * (this.selectionCanvas.width / rect.width);
+                const endY = (e.clientY - rect.top) * (this.selectionCanvas.height / rect.height);
                 
                 this.selections.push({
                     type: this.selectionTool,
@@ -780,17 +902,16 @@
                     endY: endY
                 });
                 
-                this.selCtx.clearRect(0, 0, this.selectionCanvas.width, this.selectionCanvas.height);
+                this.clearSelectionCanvas();
                 this.drawAllSelections();
             }
 
             drawAllSelections() {
-                this.selCtx.clearRect(0, 0, this.selectionCanvas.width, this.selectionCanvas.height);
                 this.selCtx.strokeStyle = '#00ff00';
                 this.selCtx.lineWidth = 2;
-                this.selCtx.setLineDash([]);
+                this.selCtx.setLineDash([5, 5]);
                 
-                this.selections.forEach(sel => {
+                this.selections.forEach((sel, index) => {
                     if (sel.type === 'rectangle') {
                         this.selCtx.strokeRect(
                             Math.min(sel.startX, sel.endX),
@@ -813,157 +934,62 @@
             applyBlur() {
                 if (this.currentImageIndex === -1) return;
                 
-                const intensity = this.intensity.value / 100;
+                const intensity = parseInt(this.intensity.value) / 100;
                 const radius = parseInt(this.radius.value);
                 const blurType = this.blurType.value;
+                const direction = parseInt(this.direction.value);
                 
                 // Apply blur to selections or whole image
                 if (this.selections.length > 0) {
                     this.selections.forEach(sel => {
-                        this.blurSelection(sel, intensity, radius, blurType);
+                        this.blurSelection(sel, intensity, radius, blurType, direction);
                     });
+                    this.selections = [];
+                    this.clearSelectionCanvas();
                 } else {
-                    this.blurWholeImage(intensity, radius, blurType);
+                    this.blurWholeImage(intensity, radius, blurType, direction);
                 }
                 
-                this.updatePreview();
                 this.showNotification('✅ Պղտորումը կիրառված է');
             }
 
-            blurSelection(selection, intensity, radius, blurType) {
+            blurSelection(selection, intensity, radius, blurType, direction) {
                 let x, y, width, height;
                 
                 if (selection.type === 'rectangle') {
-                    x = Math.min(selection.startX, selection.endX);
-                    y = Math.min(selection.startY, selection.endY);
-                    width = Math.abs(selection.endX - selection.startX);
-                    height = Math.abs(selection.endY - selection.startY);
+                    x = Math.max(0, Math.floor(Math.min(selection.startX, selection.endX)));
+                    y = Math.max(0, Math.floor(Math.min(selection.startY, selection.endY)));
+                    width = Math.min(
+                        this.mainCanvas.width - x,
+                        Math.floor(Math.abs(selection.endX - selection.startX))
+                    );
+                    height = Math.min(
+                        this.mainCanvas.height - y,
+                        Math.floor(Math.abs(selection.endY - selection.startY))
+                    );
                 } else if (selection.type === 'circle') {
                     const r = Math.sqrt(
                         Math.pow(selection.endX - selection.startX, 2) + 
                         Math.pow(selection.endY - selection.startY, 2)
                     );
-                    x = selection.startX - r;
-                    y = selection.startY - r;
-                    width = r * 2;
-                    height = r * 2;
+                    x = Math.max(0, Math.floor(selection.startX - r));
+                    y = Math.max(0, Math.floor(selection.startY - r));
+                    width = Math.min(this.mainCanvas.width - x, Math.floor(r * 2));
+                    height = Math.min(this.mainCanvas.height - y, Math.floor(r * 2));
                 }
                 
+                if (width <= 0 || height <= 0) return;
+                
                 const imageData = this.ctx.getImageData(x, y, width, height);
-                const blurredData = this.applyBlurToImageData(imageData, intensity, radius, blurType);
+                const blurredData = this.applyBlurToImageData(imageData, intensity, radius, blurType, direction);
                 this.ctx.putImageData(blurredData, x, y);
             }
 
-            blurWholeImage(intensity, radius, blurType) {
+            blurWholeImage(intensity, radius, blurType, direction) {
                 const imageData = this.ctx.getImageData(0, 0, this.mainCanvas.width, this.mainCanvas.height);
-                const blurredData = this.applyBlurToImageData(imageData, intensity, radius, blurType);
+                const blurredData = this.applyBlurToImageData(imageData, intensity, radius, blurType, direction);
                 this.ctx.putImageData(blurredData, 0, 0);
             }
 
-            applyBlurToImageData(imageData, intensity, radius, blurType) {
-                switch(blurType) {
-                    case 'gaussian':
-                        return this.gaussianBlur(imageData, Math.floor(radius * intensity));
-                    case 'motion':
-                        return this.motionBlur(imageData, Math.floor(radius * intensity), parseInt(this.direction.value));
-                    case 'pixel':
-                        return this.pixelBlur(imageData, Math.max(2, Math.floor(radius * intensity)));
-                    case 'mosaic':
-                        return this.mosaicBlur(imageData, Math.max(3, Math.floor(radius * intensity)));
-                    default:
-                        return imageData;
-                }
-            }
-
-            gaussianBlur(imageData, radius) {
-                const data = imageData.data;
-                const width = imageData.width;
-                const height = imageData.height;
-                const result = new Uint8ClampedArray(data);
-                
-                // Simple box blur with multiple passes
-                for (let pass = 0; pass < 3; pass++) {
-                    const temp = new Uint8ClampedArray(result);
-                    
-                    // Horizontal pass
-                    for (let y = 0; y < height; y++) {
-                        for (let x = 0; x < width; x++) {
-                            let r = 0, g = 0, b = 0, a = 0, count = 0;
-                            for (let dx = -radius; dx <= radius; dx++) {
-                                const nx = x + dx;
-                                if (nx >= 0 && nx < width) {
-                                    const idx = (y * width + nx) * 4;
-                                    r += temp[idx];
-                                    g += temp[idx + 1];
-                                    b += temp[idx + 2];
-                                    a += temp[idx + 3];
-                                    count++;
-                                }
-                            }
-                            const idx = (y * width + x) * 4;
-                            result[idx] = r / count;
-                            result[idx + 1] = g / count;
-                            result[idx + 2] = b / count;
-                            result[idx + 3] = a / count;
-                        }
-                    }
-                    
-                    // Vertical pass
-                    for (let y = 0; y < height; y++) {
-                        for (let x = 0; x < width; x++) {
-                            let r = 0, g = 0, b = 0, a = 0, count = 0;
-                            for (let dy = -radius; dy <= radius; dy++) {
-                                const ny = y + dy;
-                                if (ny >= 0 && ny < height) {
-                                    const idx = (ny * width + x) * 4;
-                                    r += result[idx];
-                                    g += result[idx + 1];
-                                    b += result[idx + 2];
-                                    a += result[idx + 3];
-                                    count++;
-                                }
-                            }
-                            const idx = (y * width + x) * 4;
-                            temp[idx] = r / count;
-                            temp[idx + 1] = g / count;
-                            temp[idx + 2] = b / count;
-                            temp[idx + 3] = a / count;
-                        }
-                    }
-                }
-                
-                return new ImageData(result, width, height);
-            }
-
-            motionBlur(imageData, length, angle) {
-                const data = imageData.data;
-                const width = imageData.width;
-                const height = imageData.height;
-                const result = new Uint8ClampedArray(data);
-                
-                const radians = (angle * Math.PI) / 180;
-                const dx = Math.cos(radians) * length / 2;
-                const dy = Math.sin(radians) * length / 2;
-                
-                for (let y = 0; y < height; y++) {
-                    for (let x = 0; x < width; x++) {
-                        let r = 0, g = 0, b = 0, a = 0, count = 0;
-                        
-                        for (let t = -1; t <= 1; t += 0.5) {
-                            const nx = Math.floor(x + dx * t);
-                            const ny = Math.floor(y + dy * t);
-                            
-                            if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-                                const idx = (ny * width + nx) * 4;
-                                r += data[idx];
-                                g += data[idx + 1];
-                                b += data[idx + 2];
-                                a += data[idx + 3];
-                                count++;
-                            }
-                        }
-                        
-                        const idx = (y * width + x) * 4;
-                        result[idx] = r / count;
-                        result[idx + 1] = g / count;
-                        result[idx + 2] = b
+            applyBlurToImageData(imageData, intensity, radius, blurType, direction) {
+                const effectiveRadius = Math.max(1
