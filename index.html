@@ -5,1004 +5,618 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AI Qez Blur Editor</title>
 <style>
-    :root {
-        --bg: #0b0f1a;
-        --panel: #151b2b;
-        --panel-2: #1c2438;
-        --text: #eef2ff;
-        --muted: #9aa4bf;
-        --accent: #7c5cff;
-        --accent-2: #4cc9f0;
-        --danger: #ff5c7a;
-        --ok: #33d69f;
-        --border: rgba(255,255,255,.10);
-        --shadow: 0 18px 50px rgba(0,0,0,.35);
-        --radius: 18px;
-    }
+    * { box-sizing: border-box; }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    [hidden] { display: none !important; }
 
     body {
+        margin: 0;
         min-height: 100vh;
-        background:
-            radial-gradient(1200px 800px at 80% -10%, rgba(124,92,255,.25), transparent 60%),
-            radial-gradient(1000px 700px at 0% 110%, rgba(76,201,240,.18), transparent 55%),
-            var(--bg);
-        color: var(--text);
-        font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding: 28px 16px 48px;
+        background: #f0f2f5;
+        font-family: Verdana, Geneva, Tahoma, sans-serif;
+        padding-bottom: 40px;
     }
 
     header {
-        width: min(1100px, 100%);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 22px;
+        width: 100%;
+        background: #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,.08);
+        padding: 14px 0;
         text-align: center;
+        margin-bottom: 24px;
     }
+    header h2 { margin: 0; font-size: clamp(1rem, 1rem + 1vw, 1.3rem); color: #222; }
 
-    .logo-badge {
-        width: 64px;
-        height: 64px;
-        border-radius: 20px;
-        display: grid;
-        place-items: center;
-        background: linear-gradient(135deg, var(--accent), var(--accent-2));
-        box-shadow: var(--shadow);
-        font-size: 28px;
-    }
-
-    header h1 {
-        font-size: clamp(1.4rem, 3vw, 2.3rem);
-        letter-spacing: .3px;
-        background: linear-gradient(90deg, #fff, #c7d2fe, #93e6ff);
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
-    }
-
-    header p { color: var(--muted); max-width: 720px; }
-
-    .app {
-        width: min(1100px, 100%);
-        display: grid;
-        grid-template-columns: 380px 1fr;
-        gap: 18px;
-        align-items: start;
-    }
-
-    @media (max-width: 980px) {
-        .app { grid-template-columns: 1fr; }
-    }
-
-    .card {
-        background: linear-gradient(180deg, rgba(255,255,255,.03), transparent),
-                    var(--panel);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        box-shadow: var(--shadow);
-        padding: 18px;
-    }
-
-    .toolbar h2, .canvas-card h2 {
-        font-size: 1rem;
-        margin-bottom: 12px;
-        color: #dbe3ff;
+    .controls {
+        width: min(920px, 92vw);
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,.1);
+        padding: 14px 20px;
         display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .group { margin-bottom: 14px; }
-
-    label {
-        display: block;
-        font-size: .9rem;
-        color: #b9c3dd;
-        margin-bottom: 8px;
-    }
-
-    select, input[type="number"] {
-        width: 100%;
-        padding: 12px 14px;
-        border-radius: 14px;
-        border: 1px solid var(--border);
-        background: var(--panel-2);
-        color: var(--text);
-        outline: none;
-    }
-
-    select:focus, input[type="number"]:focus {
-        border-color: rgba(124,92,255,.65);
-        box-shadow: 0 0 0 3px rgba(124,92,255,.2);
-    }
-
-    input[type="range"] {
-        width: 100%;
-        accent-color: var(--accent);
-    }
-
-    .row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-    }
-
-    .hint {
-        font-size: .85rem;
-        color: var(--muted);
-        line-height: 1.35;
-        margin-top: 8px;
-    }
-
-    .btns {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        margin-top: 16px;
-    }
-
-    .btn {
-        flex: 1;
-        min-width: 130px;
-        display: inline-flex;
+        gap: 16px;
         align-items: center;
         justify-content: center;
-        gap: 8px;
-        padding: 13px 16px;
-        border-radius: 14px;
-        border: 1px solid transparent;
-        font-weight: 700;
-        cursor: pointer;
-        transition: .2s;
+        flex-wrap: wrap;
+        margin-bottom: 24px;
+        min-height: 60px;
     }
 
-    .btn:disabled {
-        opacity: .45;
-        cursor: not-allowed;
-    }
-
-    .btn-primary {
-        background: linear-gradient(135deg, var(--accent), #5b3df0);
+    button {
+        padding: 8px 16px;
+        background: #007bff;
         color: #fff;
-        box-shadow: 0 10px 24px rgba(124,92,255,.35);
-    }
-
-    .btn-primary:hover:not(:disabled) { transform: translateY(-1px); }
-
-    .btn-secondary {
-        background: rgba(255,255,255,.06);
-        color: var(--text);
-        border-color: var(--border);
-    }
-
-    .btn-secondary:hover:not(:disabled) { background: rgba(255,255,255,.1); }
-
-    .btn-ghost {
-        background: transparent;
-        color: #ffb3c1;
-        border-color: rgba(255,92,122,.35);
-    }
-
-    .btn-ghost:hover:not(:disabled) { background: rgba(255,92,122,.12); }
-
-    .dropzone {
-        position: relative;
-        min-height: 220px;
-        border: 2px dashed rgba(124,92,255,.55);
-        border-radius: 16px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        text-align: center;
-        padding: 18px;
-        cursor: pointer;
-        transition: .2s;
-        background: rgba(124,92,255,.06);
-        margin-bottom: 14px;
-    }
-
-    .dropzone:hover, .dropzone.dragover {
-        border-color: var(--accent-2);
-        background: rgba(76,201,240,.10);
-    }
-
-    .dropzone strong { font-size: 1rem; }
-    .dropzone span { color: var(--muted); font-size: .9rem; line-height: 1.4; }
-
-    .file-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 11px 16px;
-        border-radius: 12px;
-        background: linear-gradient(135deg, var(--accent-2), #39a7dd);
-        color: #04222e;
-        font-weight: 700;
-        box-shadow: 0 10px 24px rgba(76,201,240,.28);
-    }
-
-    #fileInput { display: none; }
-
-    .preview-area {
-        display: none;
-        margin-top: 14px;
-    }
-
-    .preview-area.visible {
-        display: block;
-        animation: fadeIn .25s ease;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(4px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .canvas-wrap {
-        position: relative;
-        min-height: 300px;
-        border-radius: 16px;
-        overflow: hidden;
-        background:
-            linear-gradient(45deg, rgba(255,255,255,.04) 25%, transparent 25%,
-                        transparent 75%, rgba(255,255,255,.04) 75%),
-            #0d1322;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid var(--border);
-    }
-
-    #mainCanvas {
-        max-width: 100%;
-        max-height: 62vh;
-        display: block;
-        touch-action: none;
-        cursor: crosshair;
-    }
-
-    .mode-bar {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        margin-top: 14px;
-    }
-
-    .mode-pill {
-        border: 1px solid var(--border);
-        background: var(--panel-2);
-        color: #dfe6ff;
-        padding: 10px 14px;
-        border-radius: 999px;
+        border: none;
+        border-radius: 4px;
         cursor: pointer;
         font-weight: 600;
-        transition: .2s;
+        font-family: inherit;
+        transition: background .2s;
     }
+    button:hover { background: #0056b3; }
+    button:disabled { background: #adb5bd; cursor: not-allowed; }
 
-    .mode-pill.active {
-        background: linear-gradient(135deg, rgba(124,92,255,.28), rgba(76,201,240,.22));
-        border-color: rgba(124,92,255,.65);
-    }
-
-    .history {
+    /* ===== Drop Zone ===== */
+    .drop-zone {
+        width: min(920px, 92vw);
+        background: #f7f8fc;
+        border: 2px dashed #ccd3e0;
+        border-radius: 10px;
+        padding: clamp(32px, 6vw, 64px) 24px;
         display: flex;
-        gap: 10px;
-        margin-top: 12px;
-    }
-
-    .nav-btn {
-        padding: 10px 16px;
-        border-radius: 12px;
-        border: 1px solid var(--border);
-        background: var(--panel-2);
-        color: var(--text);
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
         cursor: pointer;
-        transition: .2s;
+        transition: border-color .15s, background .15s;
+        position: relative;
+    }
+    .drop-zone.dragover { border-color: #007bff; background: #eef5ff; }
+    .drop-zone svg { margin-bottom: 18px; width: clamp(40px, 8vw, 64px); height: clamp(40px, 8vw, 64px); pointer-events: none; }
+    .drop-zone h2 { margin: 0 0 10px; font-size: clamp(1rem, 1rem + 1.2vw, 1.35rem); color: #111; pointer-events: none; }
+    .drop-zone p { margin: 0 0 22px; color: #7b8494; font-size: clamp(.78rem, .78rem + .4vw, .95rem); pointer-events: none; }
+
+    #chooseFileBtn {
+        background: #fff;
+        color: #000;
+        border: 2px solid #000;
+        border-radius: 6px;
+        padding: 10px 26px;
+        font-size: clamp(.82rem, .82rem + .3vw, .95rem);
+        font-weight: 700;
+        pointer-events: auto;
+        z-index: 2;
+    }
+    #chooseFileBtn:hover { background: #f2f2f2; }
+
+    .drop-error { display: none; color: #d93025; font-size: .85rem; margin-bottom: 12px; pointer-events: none; }
+
+    /* ===== Editor ===== */
+    .editor { display: none; flex-direction: column; align-items: center; width: 100%; }
+    .canvas-wrap { position: relative; line-height: 0; max-width: 100%; }
+
+    #canvas {
+        display: block;
+        width: auto;
+        height: auto;
+        max-width: min(92vw, 920px);
+        max-height: 70vh;
+        cursor: crosshair;
+        background: #fff;
+        box-shadow: 0 2px 12px rgba(0,0,0,.15);
+        border-radius: 4px;
+        touch-action: none;
     }
 
-    .nav-btn:hover:not(:disabled) { background: rgba(255,255,255,.09); }
-    .nav-btn:disabled { opacity: .45; cursor: not-allowed; }
-
-    .status {
-        margin-top: 12px;
-        min-height: 22px;
-        color: var(--muted);
-        font-size: .92rem;
-    }
-
-    .status.ok { color: var(--ok); }
-    .status.err { color: var(--danger); }
-
-    .badge {
+    #selectionBox {
         position: absolute;
-        top: 12px;
-        left: 12px;
-        padding: 6px 10px;
-        border-radius: 999px;
-        background: rgba(8,12,22,.72);
-        border: 1px solid var(--border);
-        color: #fff;
-        font-size: .8rem;
+        display: none;
+        border: 2px dashed #007bff;
+        background: rgba(0, 123, 255, .18);
         pointer-events: none;
     }
 
-    footer {
-        margin-top: 20px;
-        color: var(--muted);
-        font-size: .9rem;
-        text-align: center;
+    /* ===== Layers Group ===== */
+    .layers-panel {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: stretch;
+        justify-content: center;
+        margin-bottom: 12px;
+        min-height: 44px;
+        width: min(920px, 92vw);
+    }
+    .layers-empty { font-size: .82rem; color: #8a94a4; align-self: center; }
+
+    .layer-chip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #333;
+        border: 1px solid #555;
+        border-radius: 6px;
+        padding: 6px 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,.08);
+        flex-wrap: wrap;
+    }
+    .layer-chip canvas { border-radius: 3px; border: 1px solid #e3e7ee; }
+    .layer-chip > span.layer-name { font-size: .78rem; font-weight: 600; color: #fff; white-space: nowrap; }
+
+    .layer-opacity { display: flex; align-items: center; gap: 6px; }
+    .layer-opacity label { font-size: .7rem; font-weight: 600; color: #fff; white-space: nowrap; }
+    .layer-opacity input[type="range"] { width: clamp(70px, 12vw, 90px); cursor: pointer; accent-color: #fff; }
+    .layer-opacity output { min-width: 38px; font-size: .7rem; font-weight: 700; color: #fff; }
+
+    .layer-delete {
+        background: transparent;
+        color: #ff6b6b;
+        padding: 2px 8px;
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+    .layer-delete:hover { background: rgba(255, 255, 255, 0.1); }
+
+    /* ===== Undo / Redo ===== */
+    .history-bar { display: flex; gap: 12px; margin-top: 14px; flex-wrap: wrap; justify-content: center; }
+    .history-bar button { display: inline-flex; align-items: center; gap: 8px; }
+    .history-bar svg { flex: 0 0 auto; }
+
+    /* ===== Responsive / Adaptive ===== */
+    @media (max-width: 600px) {
+        .controls { gap: 10px; padding: 12px; }
+        button { padding: 8px 12px; font-size: .82rem; }
+        #canvas { max-height: 60vh; }
+        .layer-chip { width: 100%; justify-content: space-between; }
+        .layer-opacity input[type="range"] { flex: 1; min-width: 60px; }
     }
 </style>
 </head>
 <body>
 
-<header>
-    <div class="logo-badge">✨</div>
-    <h1>AI Qez Blur Editor</h1>
-    <p>Վերբեռնեք նկար և ընտրեք մշակման ռեժիմը՝ ամբողջ պատկերը մշակելու կամ վրձինով ընտրված հատվածը փոփոխելու համար։</p>
-</header>
+<header><h2>AI Qez Blur Editor</h2></header>
 
-<main class="app">
-    <section class="card toolbar">
-        <h2>⚙️ Կարգավորումներ</h2>
+<div class="controls">
+    <!-- Անտեսանելի են, քանի դեռ նկար չի վերբեռնվել -->
+    <button type="button" id="restartBtn" hidden>Վերագործարկել</button>
+    <button type="button" id="downloadBtn" hidden>Ներբեռնել</button>
+</div>
 
-        <div class="group">
-            <label for="modeSelect">Մշակման ռեժիմ</label>
-            <select id="modeSelect">
-                <option value="blur">Բլուր (Blur)</option>
-                <option value="pixelate">Պիքսելացում (Pixelate)</option>
-                <option value="grayscale">Սև-սպիտակ (Grayscale)</option>
-                <option value="sepia">Սեպիա (Sepia)</option>
-            </select>
-            <p class="hint">«Կիրառել ամբողջ նկարին» կոճակը մշակում է ամբողջ պատկերը, իսկ վրձինը՝ միայն նշված հատվածը։</p>
-        </div>
+<!-- HTML5 Drag & Drop Zone -->
+<div id="dropZone" class="drop-zone" tabindex="0" role="button" aria-label="Upload image">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#8b95a5"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 15V4"></path>
+        <path d="M7 8l5-5 5 5"></path>
+        <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"></path>
+    </svg>
+    <h2>Տեղադրեք նկար կամ սեղմեք՝ վերբեռնելու համար</h2>
+    <p>Աջակցում է JPG, PNG, GIF ձևաչափերին • կամ տեղադրեք (Ctrl+V) ստեղների օգնությամբ:</p>
+    <div id="dropError" class="drop-error"></div>
+    <button type="button" id="chooseFileBtn">Ընտրեք ֆայլ</button>
+</div>
 
-        <div class="row">
-            <div class="group">
-                <label for="blurRange">Բլուրի ուժգնություն</label>
-                <input type="range" id="blurRange" min="0" max="20" step="1" value="8">
-            </div>
-            <div class="group">
-                <label for="pixelRange">Պիքսելի չափ</label>
-                <input type="range" id="pixelRange" min="4" max="40" step="2" value="14">
-            </div>
-        </div>
+<div id="editor" class="editor">
+    <!-- Layer-ների Group-ներ -->
+    <div id="layersPanel" class="layers-panel" aria-label="Layers"></div>
 
-        <div class="row">
-            <div class="group">
-                <label for="brushSize">Վրձնի չափ</label>
-                <input type="range" id="brushSize" min="10" max="120" step="2" value="40">
-            </div>
-            <div class="group">
-                <label for="exportFormat">Արտահանման ձևաչափ</label>
-                <select id="exportFormat">
-                    <option value="image/png">PNG</option>
-                    <option value="image/jpeg">JPG</option>
-                </select>
-            </div>
-        </div>
+    <div class="canvas-wrap">
+        <canvas id="canvas"></canvas>
+        <div id="selectionBox"></div>
+    </div>
 
-        <div class="btns">
-            <button id="applyBtn" class="btn btn-primary" disabled>🪄 Կիրառել ամբողջ նկարին</button>
-        </div>
+    <!-- Undo / Redo -->
+    <div class="history-bar">
+        <button type="button" id="undoBtn" title="Undo (Ctrl+Z)" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M9 14 4 9l5-5"></path>
+                <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5 5.5 5.5 0 0 1-5.5 5.5H11"></path>
+            </svg>
+            Նախորդ
+        </button>
+        <button type="button" id="redoBtn" title="Redo (Ctrl+Y)" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m15 14 5-5-5-5"></path>
+                <path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5 5.5 5.5 0 0 0 9.5 20H13"></path>
+            </svg>
+            Հաջորդ
+        </button>
+    </div>
+</div>
 
-        <div class="btns">
-            <!-- Պահանջ #1: սկզբում թաքցված են -->
-            <button id="resetBtn" class="btn btn-secondary hidden" disabled>🔄 Վերագործարկել</button>
-            <button id="downloadBtn" class="btn btn-secondary hidden" disabled>⬇️ Ներբեռնել</button>
-        </div>
-
-        <div class="btns">
-            <button id="clearBrushBtn" class="btn btn-ghost" disabled>🧹 Մաքրել վրձնի շերտը</button>
-        </div>
-
-        <p class="status" id="status">Սպասում ենք նկարին…</p>
-    </section>
-
-    <section class="card canvas-card">
-        <h2>🖼️ Խմբագրիչ</h2>
-
-        <div class="dropzone" id="dropzone">
-            <strong>Տեղադրեք նկար կամ սեղմեք՝ վերբեռնելու համար</strong>
-            <span>Աջակցում է JPG, PNG, GIF ձևաչափերին • կամ տեղադրեք (Ctrl+V) ստեղների օգնությամբ։</span>
-            <span class="file-btn">📁 Ընտրեք ֆայլ</span>
-            <input type="file" id="fileInput" accept="image/png,image/jpeg,image/gif">
-        </div>
-
-        <!-- Պահանջ #1: նախնական վիճակում թաքցված է -->
-        <div class="preview-area" id="previewArea">
-            <div class="canvas-wrap" id="canvasWrap">
-                <canvas id="mainCanvas"></canvas>
-                <div class="badge" id="brushBadge">Վրձին՝ նկարելու համար</div>
-            </div>
-
-            <div class="mode-bar">
-                <button class="mode-pill active" id="brushModeBtn">🖌️ Վրձնի ռեժիմ</button>
-                <button class="mode-pill" id="previewModeBtn">👁️ Նախադիտում</button>
-            </div>
-
-            <div class="history">
-                <button class="nav-btn" id="prevBtn" disabled>← Նախորդ</button>
-                <button class="nav-btn" id="nextBtn" disabled>Հաջորդ →</button>
-            </div>
-        </div>
-    </section>
-</main>
-
-<footer>
-    Պատրաստված է ❤️-ով — AI Qez Blur Editor
-</footer>
+<input type="file" id="fileInput" accept="image/*" hidden>
 
 <script>
 (() => {
-    "use strict";
+    'use strict';
 
-    const state = {
-        originalImage: null,
-        history: [],
-        historyIndex: -1,
-        mode: "brush",
-        effect: "blur",
-        isDrawing: false,
-        lastPoint: null
-    };
+    const BLUR_RADIUS = 10;
+    const DEFAULT_OPACITY = 100;
 
-    const el = {
-        dropzone: document.getElementById("dropzone"),
-        fileInput: document.getElementById("fileInput"),
-        previewArea: document.getElementById("previewArea"),
-        canvas: document.getElementById("mainCanvas"),
-        ctx: null,
-        maskCanvas: document.createElement("canvas"),
-        maskCtx: null,
-        overlayCanvas: document.createElement("canvas"),
-        overlayCtx: null,
-        modeSelect: document.getElementById("modeSelect"),
-        blurRange: document.getElementById("blurRange"),
-        pixelRange: document.getElementById("pixelRange"),
-        brushSize: document.getElementById("brushSize"),
-        exportFormat: document.getElementById("exportFormat"),
-        applyBtn: document.getElementById("applyBtn"),
-        resetBtn: document.getElementById("resetBtn"),
-        downloadBtn: document.getElementById("downloadBtn"),
-        clearBrushBtn: document.getElementById("clearBrushBtn"),
-        status: document.getElementById("status"),
-        prevBtn: document.getElementById("prevBtn"),
-        nextBtn: document.getElementById("nextBtn"),
-        brushModeBtn: document.getElementById("brushModeBtn"),
-        previewModeBtn: document.getElementById("previewModeBtn"),
-        canvasWrap: document.getElementById("canvasWrap"),
-        brushBadge: document.getElementById("brushBadge")
-    };
+    const dropZone      = document.getElementById('dropZone');
+    const chooseFileBtn = document.getElementById('chooseFileBtn');
+    const fileInput     = document.getElementById('fileInput');
+    const restartBtn    = document.getElementById('restartBtn');
+    const downloadBtn   = document.getElementById('downloadBtn');
+    const editor        = document.getElementById('editor');
+    const layersPanel   = document.getElementById('layersPanel');
+    const undoBtn       = document.getElementById('undoBtn');
+    const redoBtn       = document.getElementById('redoBtn');
+    const canvas        = document.getElementById('canvas');
+    const ctx           = canvas.getContext('2d');
+    const selectionBox  = document.getElementById('selectionBox');
+    const dropError     = document.getElementById('dropError');
 
-    el.ctx = el.canvas.getContext("2d", { willReadFrequently: true });
-    el.maskCtx = el.maskCanvas.getContext("2d", { willReadFrequently: true });
-    el.overlayCtx = el.overlayCanvas.getContext("2d");
+    let originalImage = null;
+    let selecting = false;
+    let startX = 0, startY = 0;
+    let nextLayerId = 1;
 
-    function setStatus(message, type = "") {
-        el.status.textContent = message;
-        el.status.className = "status" + (type ? " " + type : "");
-    }
+    let layers = [];
+    const history = [];
+    let historyIndex = -1;
 
-    function clamp(value, min, max) {
-        return Math.min(max, Math.max(min, value));
-    }
+    /* ================= Render ================= */
+    function render() {
+        if (!originalImage) return;
+        ctx.save();
+        ctx.filter = 'none';
+        ctx.globalAlpha = 1;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(originalImage, 0, 0);
 
-    // Պահանջ #1: նկար բեռնվելուց հետո միայն ցույց տալ CTA կոճակները
-    function updateEditorVisibility() {
-        const hasImage = Boolean(state.originalImage);
-
-        el.previewArea.classList.toggle("visible", hasImage);
-        el.resetBtn.classList.toggle("hidden", !hasImage);
-        el.downloadBtn.classList.toggle("hidden", !hasImage);
-
-        [
-            el.applyBtn,
-            el.resetBtn,
-            el.downloadBtn,
-            el.clearBrushBtn,
-            el.prevBtn,
-            el.nextBtn
-        ].forEach(btn => btn.disabled = !hasImage);
-
-        if (hasImage) {
-            updateHistoryButtons();
-        } else {
-            el.prevBtn.disabled = true;
-            el.nextBtn.disabled = true;
+        for (const r of layers) {
+            const alpha = r.opacity / 100;
+            if (alpha <= 0) continue;
+            ctx.globalAlpha = alpha;
+            ctx.drawImage(r.canvas, r.x, r.y);
         }
+        ctx.restore();
+    }
+
+    /* ================= History ================= */
+    function commit(newLayers) {
+        history.length = historyIndex + 1;
+        history.push(newLayers);
+        historyIndex = history.length - 1;
+        layers = newLayers;
+        render();
+        renderLayerPanel();
+        updateHistoryButtons();
+    }
+
+    function undo() {
+        if (historyIndex <= 0) return;
+        historyIndex--;
+        layers = history[historyIndex];
+        render();
+        renderLayerPanel();
+        updateHistoryButtons();
+    }
+
+    function redo() {
+        if (historyIndex >= history.length - 1) return;
+        historyIndex++;
+        layers = history[historyIndex];
+        render();
+        renderLayerPanel();
+        updateHistoryButtons();
+    }
+
+    // Վերագործարկել․ ջնջում է նկարը և վերադառնում հիմնական էջին
+    function restart() {
+        originalImage = null;
+        layers = [];
+        history.length = 0;
+        historyIndex = -1;
+        nextLayerId = 1;
+        selecting = false;
+        selectionBox.style.display = 'none';
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        layersPanel.innerHTML = '';
+
+        editor.style.display = 'none';
+        dropZone.style.display = 'flex';
+
+        // Կոճակները նորից անտեսանելի են
+        restartBtn.hidden = true;
+        downloadBtn.hidden = true;
+
+        undoBtn.disabled = true;
+        redoBtn.disabled = true;
+        fileInput.value = '';
     }
 
     function updateHistoryButtons() {
-        el.prevBtn.disabled = state.historyIndex <= 0;
-        el.nextBtn.disabled = state.historyIndex >= state.history.length - 1;
+        undoBtn.disabled = historyIndex <= 0;
+        redoBtn.disabled = historyIndex >= history.length - 1;
     }
 
-    function loadImageFromFile(file) {
-        if (!file) return;
+    function deleteLayer(id) {
+        const next = layers.filter(l => l.id !== id);
+        if (next.length === layers.length) return;
+        commit(next);
+    }
 
-        const validTypes = ["image/jpeg", "image/png", "image/gif"];
-        if (!validTypes.includes(file.type)) {
-            setStatus("Սխալ ձևաչափ։ Խնդրում ենք ընտրել JPG, PNG կամ GIF նկար։", "err");
+    function setLayerOpacity(id, value) {
+        const layer = layers.find(l => l.id === id);
+        if (!layer) return;
+        layer.opacity = parseInt(value, 10);
+        render();
+        const out = document.querySelector('.layer-opacity output[data-id="' + id + '"]');
+        if (out) out.textContent = layer.opacity + '%';
+    }
+
+    undoBtn.addEventListener('click', undo);
+    redoBtn.addEventListener('click', redo);
+    restartBtn.addEventListener('click', restart);
+
+    document.addEventListener('keydown', e => {
+        if (!(e.ctrlKey || e.metaKey)) return;
+        const k = e.key.toLowerCase();
+        if (k === 'z') { e.preventDefault(); undo(); }
+        else if (k === 'y') { e.preventDefault(); redo(); }
+    });
+
+    /* ================= Layers Panel ================= */
+    function renderLayerPanel() {
+        layersPanel.innerHTML = '';
+        if (layers.length === 0) {
+            const empty = document.createElement('span');
+            empty.className = 'layers-empty';
+            empty.textContent = 'No layers';
+            layersPanel.appendChild(empty);
             return;
         }
-
-        const reader = new FileReader();
-        reader.onload = e => {
-            const img = new Image();
-            img.onload = () => initEditor(img);
-            img.onerror = () => setStatus("Նկարը բեռնել չհաջողվեց։", "err");
-            img.src = e.target.result;
-        };
-        reader.onerror = () => setStatus("Ֆայլը կարդալ չհաջողվեց։", "err");
-        reader.readAsDataURL(file);
-    }
-
-    function initEditor(img) {
-        state.originalImage = img;
-
-        const maxWidth = 1600;
-        const scale = img.width > maxWidth ? maxWidth / img.width : 1;
-
-        el.canvas.width = Math.round(img.width * scale);
-        el.canvas.height = Math.round(img.height * scale);
-
-        el.maskCanvas.width = el.canvas.width;
-        el.maskCanvas.height = el.canvas.height;
-        el.overlayCanvas.width = el.canvas.width;
-        el.overlayCanvas.height = el.canvas.height;
-
-        el.maskCtx.fillStyle = "#000";
-        el.maskCtx.fillRect(0, 0, el.maskCanvas.width, el.maskCanvas.height);
-
-        el.ctx.drawImage(img, 0, 0, el.canvas.width, el.canvas.height);
-
-        state.history = [el.ctx.getImageData(0, 0, el.canvas.width, el.canvas.height)];
-        state.historyIndex = 0;
-
-        clearOverlay();
-        setMode("brush");
-        updateEditorVisibility();
-        setStatus("Նկարը բեռնված է։ Ընտրեք ռեժիմը և սկսեք խմբագրել։", "ok");
-    }
-
-    function pushHistory() {
-        const current = el.ctx.getImageData(0, 0, el.canvas.width, el.canvas.height);
-        state.history = state.history.slice(0, state.historyIndex + 1);
-        state.history.push(current);
-        state.historyIndex = state.history.length - 1;
-
-        if (state.history.length > 20) {
-            state.history.shift();
-            state.historyIndex--;
-        }
-
-        updateHistoryButtons();
-    }
-
-    function goPrev() {
-        if (state.historyIndex <= 0) return;
-        state.historyIndex--;
-        el.ctx.putImageData(state.history[state.historyIndex], 0, 0);
-        clearOverlay();
-        updateHistoryButtons();
-        setStatus("Նախորդ վիճակը վերականգնվեց։");
-    }
-
-    function goNext() {
-        if (state.historyIndex >= state.history.length - 1) return;
-        state.historyIndex++;
-        el.ctx.putImageData(state.history[state.historyIndex], 0, 0);
-        clearOverlay();
-        updateHistoryButtons();
-        setStatus("Հաջորդ վիճակը վերականգնվեց։");
-    }
-
-    function clearMask() {
-        el.maskCtx.fillStyle = "#000";
-        el.maskCtx.fillRect(0, 0, el.maskCanvas.width, el.maskCanvas.height);
-    }
-
-    function clearOverlay() {
-        el.overlayCtx.clearRect(0, 0, el.overlayCanvas.width, el.overlayCanvas.height);
-    }
-
-    function setMode(mode) {
-        state.mode = mode;
-
-        el.brushModeBtn.classList.toggle("active", mode === "brush");
-        el.previewModeBtn.classList.toggle("active", mode === "preview");
-
-        el.canvas.style.cursor = mode === "brush" ? "crosshair" : "default";
-        el.brushBadge.textContent = mode === "brush" ? "Վրձին՝ նկարելու համար" : "Նախադիտում";
-
-        if (mode === "preview") {
-            previewMaskEffect();
-        } else {
-            clearOverlay();
-        }
-    }
-
-    function getEffectSettings() {
-        const effect = el.modeSelect.value;
-        return {
-            effect,
-            blur: Number(el.blurRange.value),
-            pixel: Number(el.pixelRange.value)
-        };
-    }
-
-    function createProcessedCanvas(sourceCanvas, settings) {
-        const temp = document.createElement("canvas");
-        temp.width = sourceCanvas.width;
-        temp.height = sourceCanvas.height;
-
-        const tctx = temp.getContext("2d");
-        tctx.drawImage(sourceCanvas, 0, 0);
-
-        if (settings.effect === "blur") {
-            tctx.filter = `blur(${settings.blur}px)`;
-            tctx.drawImage(sourceCanvas, 0, 0);
-        } else if (settings.effect === "pixelate") {
-            const size = Math.max(2, settings.pixel);
-            const small = document.createElement("canvas");
-            const sw = Math.max(1, Math.round(temp.width / size));
-            const sh = Math.max(1, Math.round(temp.height / size));
-            small.width = sw;
-            small.height = sh;
-
-            const sctx = small.getContext("2d");
-            sctx.imageSmoothingEnabled = false;
-            sctx.drawImage(sourceCanvas, 0, 0, sw, sh);
-
-            tctx.imageSmoothingEnabled = false;
-            tctx.clearRect(0, 0, temp.width, temp.height);
-            tctx.drawImage(small, 0, 0, temp.width, temp.height);
-        } else {
-            const imageData = tctx.getImageData(0, 0, temp.width, temp.height);
-            const d = imageData.data;
-
-            for (let i = 0; i < d.length; i += 4) {
-                const r = d[i];
-                const g = d[i + 1];
-                const b = d[i + 2];
-
-                if (settings.effect === "grayscale") {
-                    const v = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-                    d[i] = v;
-                    d[i + 1] = v;
-                    d[i + 2] = v;
-                } else if (settings.effect === "sepia") {
-                    d[i] = clamp(0.393 * r + 0.769 * g + 0.189 * b, 0, 255);
-                    d[i + 1] = clamp(0.349 * r + 0.686 * g + 0.168 * b, 0, 255);
-                    d[i + 2] = clamp(0.272 * r + 0.534 * g + 0.131 * b, 0, 255);
-                }
-            }
-
-            tctx.putImageData(imageData, 0, 0);
-        }
-
-        return temp;
-    }
-
-    function applyToFullImage() {
-        if (!state.originalImage) return;
-
-        const settings = getEffectSettings();
-        const processed = createProcessedCanvas(el.canvas, settings);
-
-        el.ctx.clearRect(0, 0, el.canvas.width, el.canvas.height);
-        el.ctx.drawImage(processed, 0, 0);
-
-        clearMask();
-        clearOverlay();
-        pushHistory();
-        setStatus("Էֆեկտը կիրառվեց ամբողջ նկարին։", "ok");
-    }
-
-    function previewMaskEffect() {
-        if (!state.originalImage) return;
-
-        const settings = getEffectSettings();
-        const processed = createProcessedCanvas(el.canvas, settings);
-
-        clearOverlay();
-
-        el.overlayCtx.save();
-        el.overlayCtx.globalCompositeOperation = "destination-in";
-        el.overlayCtx.drawImage(el.maskCanvas, 0, 0);
-        el.overlayCtx.restore();
-
-        const previewSource = document.createElement("canvas");
-        previewSource.width = el.canvas.width;
-        previewSource.height = el.canvas.height;
-
-        const pctx = previewSource.getContext("2d");
-        pctx.drawImage(processed, 0, 0);
-        pctx.globalCompositeOperation = "destination-in";
-        pctx.drawImage(el.maskCanvas, 0, 0);
-
-        el.overlayCtx.clearRect(0, 0, el.overlayCanvas.width, el.overlayCanvas.height);
-        el.overlayCtx.drawImage(previewSource, 0, 0);
-
-        const displayCanvas = document.createElement("canvas");
-        displayCanvas.width = el.canvas.width;
-        displayCanvas.height = el.canvas.height;
-
-        const dctx = displayCanvas.getContext("2d");
-        dctx.drawImage(el.canvas, 0, 0);
-        dctx.drawImage(el.overlayCanvas, 0, 0);
-
-        el.ctx.clearRect(0, 0, el.canvas.width, el.canvas.height);
-        el.ctx.drawImage(displayCanvas, 0, 0);
-    }
-
-    function applyBrushEffect() {
-        if (!state.originalImage) return;
-
-        const settings = getEffectSettings();
-        const processed = createProcessedCanvas(el.canvas, settings);
-
-        const result = document.createElement("canvas");
-        result.width = el.canvas.width;
-        result.height = el.canvas.height;
-
-        const rctx = result.getContext("2d");
-        rctx.drawImage(el.canvas, 0, 0);
-
-        const maskedProcessed = document.createElement("canvas");
-        maskedProcessed.width = el.canvas.width;
-        maskedProcessed.height = el.canvas.height;
-
-        const mctx = maskedProcessed.getContext("2d");
-        mctx.drawImage(processed, 0, 0);
-        mctx.globalCompositeOperation = "destination-in";
-        mctx.drawImage(el.maskCanvas, 0, 0);
-
-        rctx.drawImage(maskedProcessed, 0, 0);
-
-        el.ctx.clearRect(0, 0, el.canvas.width, el.canvas.height);
-        el.ctx.drawImage(result, 0, 0);
-
-        clearMask();
-        clearOverlay();
-        pushHistory();
-        setStatus("Վրձնի էֆեկտը կիրառվեց ընտրված հատվածին։", "ok");
-    }
-
-    function paintMask(point) {
-        const size = Number(el.brushSize.value);
-
-        el.maskCtx.beginPath();
-        el.maskCtx.strokeStyle = "#fff";
-        el.maskCtx.lineWidth = size;
-        el.maskCtx.lineCap = "round";
-        el.maskCtx.lineJoin = "round";
-
-        if (state.lastPoint) {
-            el.maskCtx.moveTo(state.lastPoint.x, state.lastPoint.y);
-        } else {
-            el.maskCtx.moveTo(point.x, point.y);
-        }
-
-        el.maskCtx.lineTo(point.x, point.y);
-        el.maskCtx.stroke();
-
-        state.lastPoint = point;
-
-        drawBrushOverlay(point);
-    }
-
-    function drawBrushOverlay(point) {
-        if (state.mode !== "brush") return;
-
-        const size = Number(el.brushSize.value);
-        const radius = size / 2;
-
-        el.overlayCtx.clearRect(0, 0, el.overlayCanvas.width, el.overlayCanvas.height);
-
-        const previewSource = document.createElement("canvas");
-        previewSource.width = el.canvas.width;
-        previewSource.height = el.canvas.height;
-
-        const pctx = previewSource.getContext("2d");
-        pctx.drawImage(el.canvas, 0, 0);
-
-        const settings = getEffectSettings();
-        const processed = createProcessedCanvas(el.canvas, settings);
-
-        const maskedProcessed = document.createElement("canvas");
-        maskedProcessed.width = el.canvas.width;
-        maskedProcessed.height = el.canvas.height;
-
-        const mctx = maskedProcessed.getContext("2d");
-        mctx.drawImage(processed, 0, 0);
-        mctx.globalCompositeOperation = "destination-in";
-        mctx.drawImage(el.maskCanvas, 0, 0);
-
-        pctx.drawImage(maskedProcessed, 0, 0);
-
-        pctx.strokeStyle = "rgba(255,255,255,.8)";
-        pctx.lineWidth = 2;
-        pctx.beginPath();
-        pctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
-        pctx.stroke();
-
-        el.ctx.clearRect(0, 0, el.canvas.width, el.canvas.height);
-        el.ctx.drawImage(previewSource, 0, 0);
-    }
-
-    function getCanvasPoint(clientX, clientY) {
-        const rect = el.canvas.getBoundingClientRect();
-        const scaleX = el.canvas.width / rect.width;
-        const scaleY = el.canvas.height / rect.height;
-
-        return {
-            x: (clientX - rect.left) * scaleX,
-            y: (clientY - rect.top) * scaleY
-        };
-    }
-
-    function downloadImage() {
-        if (!state.originalImage) return;
-
-        const format = el.exportFormat.value;
-        const quality = format === "image/jpeg" ? 0.92 : undefined;
-
-        const exportCanvas = document.createElement("canvas");
-        exportCanvas.width = el.canvas.width;
-        exportCanvas.height = el.canvas.height;
-
-        const ectx = exportCanvas.getContext("2d");
-
-        if (format === "image/jpeg") {
-            ectx.fillStyle = "#ffffff";
-            ectx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
-        }
-
-        ectx.drawImage(el.canvas, 0, 0);
-
-        const link = document.createElement("a");
-        link.download = `ai-qez-blur-${Date.now()}.${format === "image/png" ? "png" : "jpg"}`;
-        link.href = exportCanvas.toDataURL(format, quality);
-        link.click();
-
-        setStatus("Նկարը ներբեռնվեց։", "ok");
-    }
-
-    function resetEditor() {
-        if (!state.originalImage) return;
-
-        el.ctx.clearRect(0, 0, el.canvas.width, el.canvas.height);
-        el.ctx.drawImage(state.originalImage, 0, 0, el.canvas.width, el.canvas.height);
-
-        state.history = [el.ctx.getImageData(0, 0, el.canvas.width, el.canvas.height)];
-        state.historyIndex = 0;
-
-        clearMask();
-        clearOverlay();
-        updateHistoryButtons();
-        setStatus("Խմբագրիչը վերագործարկվեց։");
-    }
-
-    // Events
-    el.dropzone.addEventListener("click", () => el.fileInput.click());
-
-    el.fileInput.addEventListener("change", e => {
-        loadImageFromFile(e.target.files?.[0]);
-        e.target.value = "";
-    });
-
-    ["dragenter", "dragover"].forEach(eventName => {
-        el.dropzone.addEventListener(eventName, e => {
-            e.preventDefault();
-            el.dropzone.classList.add("dragover");
+        layers.forEach(layer => {
+            const chip = document.createElement('div');
+            chip.className = 'layer-chip';
+
+            const thumb = document.createElement('canvas');
+            thumb.width = 44;
+            thumb.height = 32;
+            thumb.getContext('2d').drawImage(layer.canvas, 0, 0, 44, 32);
+
+            const name = document.createElement('span');
+            name.className = 'layer-name';
+            name.textContent = 'Layer ' + layer.id;
+
+            const opWrap = document.createElement('div');
+            opWrap.className = 'layer-opacity';
+
+            const opLabel = document.createElement('label');
+            opLabel.textContent = 'Transparent';
+
+            const opInput = document.createElement('input');
+            opInput.type = 'range';
+            opInput.min = '0';
+            opInput.max = '100';
+            opInput.step = '1';
+            opInput.value = String(layer.opacity);
+            opInput.setAttribute('aria-label', 'Blur Transparent for Layer ' + layer.id);
+
+            const opOutput = document.createElement('output');
+            opOutput.dataset.id = String(layer.id);
+            opOutput.textContent = layer.opacity + '%';
+
+            opInput.addEventListener('input', () => setLayerOpacity(layer.id, opInput.value));
+
+            opWrap.append(opLabel, opInput, opOutput);
+
+            const del = document.createElement('button');
+            del.type = 'button';
+            del.className = 'layer-delete';
+            del.title = 'Delete Layer ' + layer.id;
+            del.setAttribute('aria-label', 'Delete Layer ' + layer.id);
+            del.textContent = '\u00D7';
+            del.addEventListener('click', () => deleteLayer(layer.id));
+
+            chip.append(thumb, name, opWrap, del);
+            layersPanel.appendChild(chip);
         });
-    });
+    }
 
-    ["dragleave", "drop"].forEach(eventName => {
-        el.dropzone.addEventListener(eventName, e => {
+    /* ================= HTML5 Drag & Drop ================= */
+    ['dragenter', 'dragover'].forEach(type =>
+        dropZone.addEventListener(type, e => {
             e.preventDefault();
-            el.dropzone.classList.remove("dragover");
-        });
+            e.stopPropagation();
+            dropZone.classList.add('dragover');
+        })
+    );
+    ['dragleave', 'dragend'].forEach(type =>
+        dropZone.addEventListener(type, e => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.remove('dragover');
+        })
+    );
+    dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove('dragover');
+        const file = e.dataTransfer.files && e.dataTransfer.files[0];
+        if (file) loadFile(file);
+    });
+    ['dragover', 'drop'].forEach(type =>
+        window.addEventListener(type, e => e.preventDefault())
+    );
+
+    /* ================= Click / Paste upload ================= */
+    dropZone.addEventListener('click', (e) => {
+        if (e.target === chooseFileBtn) return;
+        fileInput.click();
     });
 
-    el.dropzone.addEventListener("drop", e => {
-        const file = e.dataTransfer?.files?.[0];
-        loadImageFromFile(file);
+    chooseFileBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        fileInput.click();
     });
 
-    window.addEventListener("paste", e => {
-        const items = e.clipboardData?.items || [];
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files && fileInput.files[0]) loadFile(fileInput.files[0]);
+        fileInput.value = '';
+    });
+
+    document.addEventListener('paste', e => {
+        const items = e.clipboardData && e.clipboardData.items;
+        if (!items) return;
         for (const item of items) {
-            if (item.type.startsWith("image/")) {
-                loadImageFromFile(item.getAsFile());
+            if (item.type && item.type.startsWith('image/')) {
+                const file = item.getAsFile();
+                if (file) loadFile(file);
                 break;
             }
         }
     });
 
-    el.canvas.addEventListener("pointerdown", e => {
-        if (!state.originalImage) return;
+    function showError(msg) {
+        dropError.textContent = msg;
+        dropError.style.display = 'block';
+        setTimeout(() => { dropError.style.display = 'none'; }, 3000);
+    }
 
-        if (state.mode === "brush") {
-            state.isDrawing = true;
-            state.lastPoint = null;
-            el.canvas.setPointerCapture(e.pointerId);
-            paintMask(getCanvasPoint(e.clientX, e.clientY));
-        } else if (state.mode === "preview") {
-            applyBrushEffect();
+    function loadFile(file) {
+        if (!file.type || !file.type.startsWith('image/')) {
+            showError('Invalid file. Please choose an image (JPG, PNG, GIF).');
+            return;
         }
+        const reader = new FileReader();
+        reader.onload = ev => {
+            const img = new Image();
+            img.onload = () => {
+                originalImage = img;
+                canvas.width  = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                nextLayerId = 1;
+                history.length = 0;
+                historyIndex = -1;
+                commit([]);
+
+                dropZone.style.display = 'none';
+                editor.style.display = 'flex';
+
+                // Կոճակները հայտնվում են նկարի բեռնումից հետո
+                restartBtn.hidden = false;
+                downloadBtn.hidden = false;
+            };
+            img.onerror = () => showError('Failed to load image.');
+            img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    /* ============ Pointer-based Rectangle selection ============ */
+    function getPointerXY(e) {
+        if (e.touches && e.touches.length) return { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
+        if (e.changedTouches && e.changedTouches.length) return { clientX: e.changedTouches[0].clientX, clientY: e.changedTouches[0].clientY };
+        return { clientX: e.clientX, clientY: e.clientY };
+    }
+
+    function toCanvasCoords(clientX, clientY) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: (clientX - rect.left) * (canvas.width  / rect.width),
+            y: (clientY - rect.top)  * (canvas.height / rect.height),
+            rect
+        };
+    }
+
+    function startSelect(e) {
+        if (!originalImage) return;
+        if (e.type === 'mousedown' && e.button !== 0) return;
+        e.preventDefault();
+        selecting = true;
+        const pt = getPointerXY(e);
+        const p = toCanvasCoords(pt.clientX, pt.clientY);
+        startX = p.x;
+        startY = p.y;
+        selectionBox.style.display = 'block';
+        selectionBox.style.left = (pt.clientX - p.rect.left) + 'px';
+        selectionBox.style.top  = (pt.clientY - p.rect.top)  + 'px';
+        selectionBox.style.width  = '0px';
+        selectionBox.style.height = '0px';
+    }
+
+    function moveSelect(e) {
+        if (!selecting) return;
+        const pt = getPointerXY(e);
+        const rect = canvas.getBoundingClientRect();
+        const cx = Math.min(Math.max(pt.clientX, rect.left), rect.right) - rect.left;
+        const cy = Math.min(Math.max(pt.clientY, rect.top),  rect.bottom) - rect.top;
+        const sx = startX / canvas.width  * rect.width;
+        const sy = startY / canvas.height * rect.height;
+        selectionBox.style.left   = Math.min(sx, cx) + 'px';
+        selectionBox.style.top    = Math.min(sy, cy) + 'px';
+        selectionBox.style.width  = Math.abs(cx - sx) + 'px';
+        selectionBox.style.height = Math.abs(cy - sy) + 'px';
+    }
+
+    function endSelect(e) {
+        if (!selecting) return;
+        selecting = false;
+        selectionBox.style.display = 'none';
+        const pt = getPointerXY(e);
+        const p  = toCanvasCoords(pt.clientX, pt.clientY);
+        const ex = Math.min(Math.max(p.x, 0), canvas.width);
+        const ey = Math.min(Math.max(p.y, 0), canvas.height);
+        const rx = Math.min(startX, ex);
+        const ry = Math.min(startY, ey);
+        const rw = Math.abs(ex - startX);
+        const rh = Math.abs(ey - startY);
+        if (rw < 3 || rh < 3) return;
+        addBlurRegion(Math.round(rx), Math.round(ry), Math.round(rw), Math.round(rh));
+    }
+
+    canvas.addEventListener('mousedown', startSelect);
+    window.addEventListener('mousemove', moveSelect);
+    window.addEventListener('mouseup', endSelect);
+    canvas.addEventListener('touchstart', startSelect, { passive: false });
+    window.addEventListener('touchmove', e => { if (selecting) { e.preventDefault(); moveSelect(e); } }, { passive: false });
+    window.addEventListener('touchend', endSelect);
+
+    function addBlurRegion(x, y, w, h) {
+        w = Math.max(1, w);
+        h = Math.max(1, h);
+        const pad = BLUR_RADIUS * 3;
+        const bw = w + pad * 2, bh = h + pad * 2;
+
+        const big = document.createElement('canvas');
+        big.width = bw;
+        big.height = bh;
+        const bctx = big.getContext('2d');
+        bctx.filter = 'blur(' + BLUR_RADIUS + 'px)';
+        bctx.drawImage(canvas, x - pad, y - pad, bw, bh, 0, 0, bw, bh);
+        bctx.filter = 'none';
+
+        const patch = document.createElement('canvas');
+        patch.width = w;
+        patch.height = h;
+        patch.getContext('2d').drawImage(big, pad, pad, w, h, 0, 0, w, h);
+
+        commit(layers.concat([{
+            id: nextLayerId++,
+            x, y, w, h,
+            canvas: patch,
+            opacity: DEFAULT_OPACITY
+        }]));
+    }
+
+    /* ================= Download ================= */
+    downloadBtn.addEventListener('click', () => {
+        const a = document.createElement('a');
+        a.download = 'blurred-image.png';
+        a.href = canvas.toDataURL('image/png');
+        a.click();
     });
-
-    el.canvas.addEventListener("pointermove", e => {
-        if (!state.originalImage || state.mode !== "brush") return;
-
-        const point = getCanvasPoint(e.clientX, e.clientY);
-
-        if (state.isDrawing) {
-            paintMask(point);
-        } else {
-            drawBrushOverlay(point);
-        }
-    });
-
-    el.canvas.addEventListener("pointerup", () => {
-        state.isDrawing = false;
-        state.lastPoint = null;
-        clearOverlay();
-
-        if (state.mode === "brush" && state.originalImage) {
-            previewMaskEffect();
-        }
-    });
-
-    el.canvas.addEventListener("pointerleave", () => {
-        if (!state.isDrawing) {
-            clearOverlay();
-        }
-    });
-
-    el.modeSelect.addEventListener("change", () => {
-        if (!state.originalImage) return;
-        if (state.mode === "preview") {
-            previewMaskEffect();
-        }
-    });
-
-    el.blurRange.addEventListener("input", () => {
-        if (state.mode === "preview") previewMaskEffect();
-    });
-
-    el.pixelRange.addEventListener("input", () => {
-        if (state.mode === "preview") previewMaskEffect();
-    });
-
-    el.applyBtn.addEventListener("click", applyToFullImage);
-    el.resetBtn.addEventListener("click", resetEditor);
-    el.downloadBtn.addEventListener("click", downloadImage);
-
-    el.clearBrushBtn.addEventListener("click", () => {
-        clearMask();
-        clearOverlay();
-        setStatus("Վրձնի շերտը մաքրվեց։");
-    });
-
-    el.brushModeBtn.addEventListener("click", () => setMode("brush"));
-    el.previewModeBtn.addEventListener("click", () => setMode("preview"));
-
-    el.prevBtn.addEventListener("click", goPrev);
-    el.nextBtn.addEventListener("click", goNext);
-
-    updateEditorVisibility();
 })();
 </script>
 
