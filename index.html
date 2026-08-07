@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Նկարի Blur Խմբագրիչ</title>
+<title>AI Qez Blur Editor</title>
 <style>
     * { box-sizing: border-box; }
 
@@ -171,12 +171,12 @@
 </head>
 <body>
 
-<header><h2>Նկարի Blur Խմբագրիչ</h2></header>
+<header><h2>AI Qez Blur Editor</h2></header>
 
 <div class="controls">
-    <button type="button" id="restartBtn" disabled>Վերագործարկել</button>
-    <button type="button" id="resetBtn" disabled>Reset</button>
-    <button type="button" id="downloadBtn" disabled>Պահպանել</button>
+    <!--<button type="button" id="restartBtn" disabled>Վերագործարկել</button>-->
+    <button type="button" id="resetBtn" disabled>Վերագործարկել</button>
+    <button type="button" id="downloadBtn" disabled>Ներբեռնել</button>
 </div>
 
 <!-- HTML5 Drag & Drop Zone -->
@@ -187,15 +187,15 @@
         <path d="M7 8l5-5 5 5"></path>
         <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"></path>
     </svg>
-    <h2>Drop an image or click to upload</h2>
-    <p>Supports JPG, PNG, GIF &bull; Or paste from clipboard (Ctrl+V)</p>
+    <h2>Տեղադրեք նկար կամ սեղմեք՝ վերբեռնելու համար</h2>
+    <p>Աջակցում է JPG, PNG, GIF ձևաչափերին &bull; կամ տեղադրեք (Ctrl+V) ստեղների օգնությամբ:</p>
     <div id="dropError" class="drop-error"></div>
-    <button type="button" id="chooseFileBtn">Choose File</button>
+    <button type="button" id="chooseFileBtn">Ընտրեք ֆայլ</button>
 </div>
 
 <div id="editor" class="editor">
     <!-- Layer-ների Group-ներ -->
-    <div id="layersPanel" class="layers-panel" aria-label="Layers"></div>
+    <div id="layersPanel" class="layers-panel" aria-label="Շերտեր"></div>
 
     <div class="canvas-wrap">
         <canvas id="canvas"></canvas>
@@ -368,7 +368,7 @@
         if (layers.length === 0) {
             const empty = document.createElement('span');
             empty.className = 'layers-empty';
-            empty.textContent = 'No layers';
+            empty.textContent = 'Շերտեր չկան';
             layersPanel.appendChild(empty);
             return;
         }
@@ -383,13 +383,13 @@
 
             const name = document.createElement('span');
             name.className = 'layer-name';
-            name.textContent = 'Layer ' + layer.id;
+            name.textContent = 'Շերտ ' + layer.id;
 
             const opWrap = document.createElement('div');
             opWrap.className = 'layer-opacity';
 
             const opLabel = document.createElement('label');
-            opLabel.textContent = 'Transparent';
+            opLabel.textContent = 'Թափանցիկություն';
 
             const opInput = document.createElement('input');
             opInput.type = 'range';
@@ -397,7 +397,7 @@
             opInput.max = '100';
             opInput.step = '1';
             opInput.value = String(layer.opacity);
-            opInput.setAttribute('aria-label', 'Blur Transparent for Layer ' + layer.id);
+            opInput.setAttribute('aria-label', 'Թափանցիկություն շերտի համար ' + layer.id);
 
             const opOutput = document.createElement('output');
             opOutput.dataset.id = String(layer.id);
@@ -410,8 +410,8 @@
             const del = document.createElement('button');
             del.type = 'button';
             del.className = 'layer-delete';
-            del.title = 'Delete Layer ' + layer.id;
-            del.setAttribute('aria-label', 'Delete Layer ' + layer.id);
+            del.title = 'Ջնջել շերտը ' + layer.id;
+            del.setAttribute('aria-label', 'Ջնջել շերտը ' + layer.id);
             del.textContent = '\u00D7';
             del.addEventListener('click', () => deleteLayer(layer.id));
 
@@ -477,7 +477,7 @@
 
     function loadFile(file) {
         if (!file.type || !file.type.startsWith('image/')) {
-            showError('Invalid file. Please choose an image (JPG, PNG, GIF).');
+            showError('Անվավեր ֆայլ։ Խնդրում ենք ընտրել նկար (JPG, PNG, GIF):');
             return;
         }
         const reader = new FileReader();
@@ -497,7 +497,7 @@
                 resetBtn.disabled = false;
                 restartBtn.disabled = false;
             };
-            img.onerror = () => showError('Failed to load image.');
+            img.onerror = () => showError('Չհաջողվեց բեռնել նկարը։');
             img.src = ev.target.result;
         };
         reader.readAsDataURL(file);
