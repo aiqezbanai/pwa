@@ -111,6 +111,47 @@
         background: rgba(0, 123, 255, .18);
         pointer-events: none;
     }
+
+    /* ===== Layers Group (container-ի վերևում) ===== */
+    .layers-panel {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 12px;
+        min-height: 44px;
+        max-width: min(92vw, 920px);
+    }
+    .layers-empty { font-size: .85rem; color: #8a94a4; }
+    .layer-chip {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: #fff;
+        border: 1px solid #d5dae2;
+        border-radius: 6px;
+        padding: 4px 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    }
+    .layer-chip canvas { border-radius: 3px; border: 1px solid #e3e7ee; }
+    .layer-chip span { font-size: .8rem; font-weight: 600; color: #333; }
+    .layer-delete {
+        background: transparent;
+        color: #d93025;
+        padding: 2px 8px;
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+    .layer-delete:hover { background: #fdecea; }
+
+    /* ===== Undo / Redo (container-ի տակ) ===== */
+    .history-bar { display: flex; gap: 12px; margin-top: 14px; }
+    .history-bar button { display: inline-flex; align-items: center; gap: 8px; }
+    .history-bar svg { flex: 0 0 auto; }
 </style>
 </head>
 <body>
@@ -124,6 +165,7 @@
         <output id="opacityValue">100%</output>
     </div>
     <button type="button" id="uploadBtn">Վերբեռնել Նկար</button>
+    <button type="button" id="resetBtn" disabled>Reset</button>
     <button type="button" id="downloadBtn" disabled>Պահպանել</button>
 </div>
 
@@ -142,9 +184,32 @@
 </div>
 
 <div id="editor" class="editor">
+    <!-- Layer-ների Group-ներ -->
+    <div id="layersPanel" class="layers-panel" aria-label="Layers"></div>
+
     <div class="canvas-wrap">
         <canvas id="canvas"></canvas>
         <div id="selectionBox"></div>
+    </div>
+
+    <!-- Undo / Redo -->
+    <div class="history-bar">
+        <button type="button" id="undoBtn" title="Undo (Ctrl+Z)" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M9 14 4 9l5-5"></path>
+                <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5 5.5 5.5 0 0 1-5.5 5.5H11"></path>
+            </svg>
+            Նախորդ
+        </button>
+        <button type="button" id="redoBtn" title="Redo (Ctrl+Y)" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m15 14 5-5-5-5"></path>
+                <path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5 5.5 5.5 0 0 0 9.5 20H13"></path>
+            </svg>
+            Հաջորդ
+        </button>
     </div>
 </div>
 
@@ -154,14 +219,18 @@
 (() => {
     'use strict';
 
-    const BLUR_RADIUS = 10; // ֆիքսված blur
+    const BLUR_RADIUS = 10;
 
     const dropZone      = document.getElementById('dropZone');
     const chooseFileBtn = document.getElementById('chooseFileBtn');
     const fileInput     = document.getElementById('fileInput');
     const uploadBtn     = document.getElementById('uploadBtn');
+    const resetBtn      = document.getElementById('resetBtn');
     const downloadBtn   = document.getElementById('downloadBtn');
     const editor        = document.getElementById('editor');
+    const layersPanel   = document.getElementById('layersPanel');
+    const undoBtn       = document.getElementById('undoBtn');
+    const redoBtn       = document.getElementById('redoBtn');
     const canvas        = document.getElementById('canvas');
     const ctx           = canvas.getContext('2d');
     const selectionBox  = document.getElementById('selectionBox');
@@ -172,15 +241,18 @@
     let originalImage = null;
     let selecting = false;
     let startX = 0, startY = 0;
+    let nextLayerId = 1;
 
-    // Blur-ված հատվածները որպես առանձին երտեր
-    const blurRegions = [];
+    // Layer-ներ + պատմություն (Undo/Redo)
+    let layers = [];
+    const history = [];
+    let historyIndex = -1;
 
     function getOpacity() {
         return parseInt(opacityInput.value, 10) / 100;
     }
 
-    /* ============ Render․ բազային նկար + blur շերտեր ============ */
+    /* ================= Render ================= */
     function render() {
         if (!originalImage) return;
         ctx.save();
@@ -191,19 +263,110 @@
 
         const alpha = getOpacity();
         if (alpha > 0) {
-            ctx.globalAlpha = alpha; // Blur Transparent %
-            for (const r of blurRegions) {
+            ctx.globalAlpha = alpha;
+            for (const r of layers) {
                 ctx.drawImage(r.canvas, r.x, r.y);
             }
         }
         ctx.restore();
     }
 
-    // Սլայդերը աշխատում է blur-ը կիրառելուց ՀԵՏՈ (live)
     opacityInput.addEventListener('input', () => {
         opacityValue.textContent = opacityInput.value + '%';
         render();
     });
+
+    /* ================= History (Undo / Redo / Reset) ================= */
+    function commit(newLayers) {
+        history.length = historyIndex + 1; // ջնջում է redo stack-ը
+        history.push(newLayers);
+        historyIndex = history.length - 1;
+        layers = newLayers;
+        render();
+        renderLayerPanel();
+        updateHistoryButtons();
+    }
+
+    function undo() {
+        if (historyIndex <= 0) return;
+        historyIndex--;
+        layers = history[historyIndex];
+        render();
+        renderLayerPanel();
+        updateHistoryButtons();
+    }
+
+    function redo() {
+        if (historyIndex >= history.length - 1) return;
+        historyIndex++;
+        layers = history[historyIndex];
+        render();
+        renderLayerPanel();
+        updateHistoryButtons();
+    }
+
+    function resetAll() {
+        history.length = 0;
+        historyIndex = -1;
+        commit([]);
+    }
+
+    function updateHistoryButtons() {
+        undoBtn.disabled = historyIndex <= 0;
+        redoBtn.disabled = historyIndex >= history.length - 1;
+    }
+
+    function deleteLayer(id) {
+        const next = layers.filter(l => l.id !== id);
+        if (next.length === layers.length) return;
+        commit(next);
+    }
+
+    undoBtn.addEventListener('click', undo);
+    redoBtn.addEventListener('click', redo);
+    resetBtn.addEventListener('click', resetAll);
+
+    document.addEventListener('keydown', e => {
+        if (!(e.ctrlKey || e.metaKey)) return;
+        const k = e.key.toLowerCase();
+        if (k === 'z') { e.preventDefault(); undo(); }
+        else if (k === 'y') { e.preventDefault(); redo(); }
+    });
+
+    /* ================= Layers Panel ================= */
+    function renderLayerPanel() {
+        layersPanel.innerHTML = '';
+        if (layers.length === 0) {
+            const empty = document.createElement('span');
+            empty.className = 'layers-empty';
+            empty.textContent = 'No layers';
+            layersPanel.appendChild(empty);
+            return;
+        }
+        layers.forEach(layer => {
+            const chip = document.createElement('div');
+            chip.className = 'layer-chip';
+
+            const thumb = document.createElement('canvas');
+            thumb.width = 44;
+            thumb.height = 32;
+            thumb.getContext('2d').drawImage(layer.canvas, 0, 0, 44, 32);
+
+            const label = document.createElement('span');
+            label.textContent = 'Layer ' + layer.id;
+
+            const del = document.createElement('button');
+            del.type = 'button';
+            del.className = 'layer-delete';
+            del.title = 'Delete Layer ' + layer.id;
+            del.setAttribute('aria-label', 'Delete Layer ' + layer.id);
+            del.textContent = '\u00D7';
+            del.addEventListener('click', () => deleteLayer(layer.id));
+
+            chip.append(thumb, label, del);
+            layersPanel.appendChild(chip);
+        });
+    }
 
     /* ================= HTML5 Drag & Drop ================= */
     ['dragenter', 'dragover'].forEach(type =>
@@ -273,11 +436,14 @@
                 originalImage = img;
                 canvas.width  = img.naturalWidth;
                 canvas.height = img.naturalHeight;
-                blurRegions.length = 0;
-                render();
+                nextLayerId = 1;
+                history.length = 0;
+                historyIndex = -1;
+                commit([]);
                 dropZone.style.display = 'none';
                 editor.style.display = 'flex';
                 downloadBtn.disabled = false;
+                resetBtn.disabled = false;
             };
             img.onerror = () => showError('Failed to load image.');
             img.src = ev.target.result;
@@ -338,7 +504,6 @@
         addBlurRegion(Math.round(rx), Math.round(ry), Math.round(rw), Math.round(rh));
     });
 
-    /* Blur շերտի ստեղծում (pad-ը կանխում է եզրային արտեֆակտները) */
     function addBlurRegion(x, y, w, h) {
         w = Math.max(1, w);
         h = Math.max(1, h);
@@ -358,8 +523,7 @@
         patch.height = h;
         patch.getContext('2d').drawImage(big, pad, pad, w, h, 0, 0, w, h);
 
-        blurRegions.push({ x, y, w, h, canvas: patch });
-        render();
+        commit(layers.concat([{ id: nextLayerId++, x, y, w, h, canvas: patch }]));
     }
 
     /* ================= Download ================= */
