@@ -2,7 +2,7 @@
 <html lang="hy">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>AI Qez Blur Editor</title>
 <style>
     * { box-sizing: border-box; }
@@ -18,6 +18,8 @@
         background: #f0f2f5;
         font-family: Verdana, Geneva, Tahoma, sans-serif;
         padding-bottom: 40px;
+        /* Կանխում է էջի zoom-ը double-tap-ով */
+        touch-action: pan-y; 
     }
 
     header {
@@ -108,7 +110,7 @@
         background: #fff;
         box-shadow: 0 2px 12px rgba(0,0,0,.15);
         border-radius: 4px;
-        touch-action: none;
+        touch-action: none; /* Կարևոր է canvas-ի համար */
     }
 
     #selectionBox {
@@ -148,7 +150,18 @@
 
     .layer-opacity { display: flex; align-items: center; gap: 6px; }
     .layer-opacity label { font-size: .7rem; font-weight: 600; color: #fff; white-space: nowrap; }
-    .layer-opacity input[type="range"] { width: clamp(70px, 12vw, 90px); cursor: pointer; accent-color: #fff; }
+    
+    /* Շտկում բջջայինի համար */
+    .layer-opacity input[type="range"] { 
+        width: clamp(70px, 12vw, 90px); 
+        cursor: pointer; 
+        accent-color: #fff; 
+        touch-action: none; /* Արգելում է scroll-ը սլայդերի վրա */
+        -webkit-appearance: none; /* iOS fix */
+        height: 24px; /* Ավելի մեծ touch area */
+        background: transparent;
+    }
+    
     .layer-opacity output { min-width: 38px; font-size: .7rem; font-weight: 700; color: #fff; }
 
     .layer-delete {
@@ -174,7 +187,8 @@
         button { padding: 8px 12px; font-size: .82rem; }
         #canvas { max-height: 60vh; }
         .layer-chip { width: 100%; justify-content: space-between; }
-        .layer-opacity input[type="range"] { flex: 1; min-width: 60px; }
+        .layer-opacity { flex: 1; justify-content: space-between; }
+        .layer-opacity input[type="range"] { flex: 1; min-width: 60px; margin: 0 8px; }
     }
 </style>
 </head>
@@ -346,6 +360,7 @@
         commit(next);
     }
 
+    // Ֆունկցիա, որը թարմացնում է opacity-ն և վերագծում նկարը
     function setLayerOpacity(id, value) {
         const layer = layers.find(l => l.id === id);
         if (!layer) return;
@@ -407,7 +422,36 @@
             opOutput.dataset.id = String(layer.id);
             opOutput.textContent = layer.opacity + '%';
 
+            // --- Desktop Event ---
             opInput.addEventListener('input', () => setLayerOpacity(layer.id, opInput.value));
+
+            // --- Mobile Touch Events Fix ---
+            // Որոշ բջջային բրաուզերներում 'input' իրադարձությունը չի աշխատում range-ի համար առանց touchmove-ի
+            opInput.addEventListener('touchstart', (e) => {
+                e.stopPropagation(); // Կանխում է էջի scroll-ը
+            }, { passive: false });
+
+            opInput.addEventListener('touchmove', (e) => {
+                e.stopPropagation(); // Կանխում է էջի scroll-ը
+                e.preventDefault();  // Կանխում է default վարքագիծը
+                
+                // Ստանում ենք touch կոորդինատները և հաշվարկում արժեքը
+                const touch = e.touches[0];
+                const rect = opInput.getBoundingClientRect();
+                const min = parseFloat(opInput.min) || 0;
+                const max = parseFloat(opInput.max) || 100;
+                
+                // Հաշվարկում ենք տոկոսը ըստ մատի դիրքի
+                let percentage = (touch.clientX - rect.left) / rect.width;
+                percentage = Math.max(0, Math.min(1, percentage)); // Clamp 0-1
+                
+                const newValue = Math.round(min + (percentage * (max - min)));
+                
+                if (opInput.value != newValue) {
+                    opInput.value = newValue;
+                    setLayerOpacity(layer.id, newValue);
+                }
+            }, { passive: false });
 
             opWrap.append(opLabel, opInput, opOutput);
 
