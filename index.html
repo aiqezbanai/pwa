@@ -40,10 +40,6 @@
         flex-wrap: wrap;
         margin-bottom: 24px;
     }
-    .control-group { display: flex; align-items: center; gap: 10px; }
-    .control-group label { font-size: .9rem; font-weight: 600; color: #333; }
-    .control-group output { min-width: 44px; font-size: .9rem; color: #007bff; font-weight: 700; }
-    input[type="range"] { cursor: pointer; }
 
     button {
         padding: 8px 16px;
@@ -117,25 +113,29 @@
         display: flex;
         gap: 8px;
         flex-wrap: wrap;
-        align-items: center;
+        align-items: stretch;
         justify-content: center;
         margin-bottom: 12px;
         min-height: 44px;
         max-width: min(92vw, 920px);
     }
-    .layers-empty { font-size: .85rem; color: #8a94a4; }
+    .layers-empty { font-size: .85rem; color: #8a94a4; align-self: center; }
     .layer-chip {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
         background: #fff;
         border: 1px solid #d5dae2;
         border-radius: 6px;
-        padding: 4px 8px;
+        padding: 6px 8px;
         box-shadow: 0 1px 3px rgba(0,0,0,.08);
     }
     .layer-chip canvas { border-radius: 3px; border: 1px solid #e3e7ee; }
-    .layer-chip span { font-size: .8rem; font-weight: 600; color: #333; }
+    .layer-chip > span.layer-name { font-size: .8rem; font-weight: 600; color: #333; white-space: nowrap; }
+    .layer-opacity { display: flex; align-items: center; gap: 6px; }
+    .layer-opacity label { font-size: .72rem; font-weight: 600; color: #555; white-space: nowrap; }
+    .layer-opacity input[type="range"] { width: 90px; cursor: pointer; }
+    .layer-opacity output { min-width: 38px; font-size: .72rem; font-weight: 700; color: #007bff; }
     .layer-delete {
         background: transparent;
         color: #d93025;
@@ -159,11 +159,6 @@
 <header><h2>Նկարի Blur Խմբագրիչ</h2></header>
 
 <div class="controls">
-    <div class="control-group">
-        <label for="blurOpacity">Blur Transparent</label>
-        <input type="range" id="blurOpacity" min="0" max="100" step="1" value="100">
-        <output id="opacityValue">100%</output>
-    </div>
     <button type="button" id="uploadBtn">Վերբեռնել Նկար</button>
     <button type="button" id="resetBtn" disabled>Reset</button>
     <button type="button" id="downloadBtn" disabled>Պահպանել</button>
@@ -220,6 +215,7 @@
     'use strict';
 
     const BLUR_RADIUS = 10;
+    const DEFAULT_OPACITY = 100; // նոր layer-ի սկզբնական Blur Transparent %
 
     const dropZone      = document.getElementById('dropZone');
     const chooseFileBtn = document.getElementById('chooseFileBtn');
@@ -234,8 +230,6 @@
     const canvas        = document.getElementById('canvas');
     const ctx           = canvas.getContext('2d');
     const selectionBox  = document.getElementById('selectionBox');
-    const opacityInput  = document.getElementById('blurOpacity');
-    const opacityValue  = document.getElementById('opacityValue');
     const dropError     = document.getElementById('dropError');
 
     let originalImage = null;
@@ -248,10 +242,6 @@
     const history = [];
     let historyIndex = -1;
 
-    function getOpacity() {
-        return parseInt(opacityInput.value, 10) / 100;
-    }
-
     /* ================= Render ================= */
     function render() {
         if (!originalImage) return;
@@ -261,24 +251,18 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(originalImage, 0, 0);
 
-        const alpha = getOpacity();
-        if (alpha > 0) {
+        for (const r of layers) {
+            const alpha = r.opacity / 100; // per-layer Blur Transparent
+            if (alpha <= 0) continue;
             ctx.globalAlpha = alpha;
-            for (const r of layers) {
-                ctx.drawImage(r.canvas, r.x, r.y);
-            }
+            ctx.drawImage(r.canvas, r.x, r.y);
         }
         ctx.restore();
     }
 
-    opacityInput.addEventListener('input', () => {
-        opacityValue.textContent = opacityInput.value + '%';
-        render();
-    });
-
     /* ================= History (Undo / Redo / Reset) ================= */
     function commit(newLayers) {
-        history.length = historyIndex + 1; // ջնջում է redo stack-ը
+        history.length = historyIndex + 1;
         history.push(newLayers);
         historyIndex = history.length - 1;
         layers = newLayers;
@@ -322,6 +306,16 @@
         commit(next);
     }
 
+    // Per-layer opacity փոփոխություն (ազդում է միայն տվյալ layer-ի վրա)
+    function setLayerOpacity(id, value) {
+        const layer = layers.find(l => l.id === id);
+        if (!layer) return;
+        layer.opacity = parseInt(value, 10);
+        render();
+        const out = document.querySelector('.layer-opacity output[data-id="' + id + '"]');
+        if (out) out.textContent = layer.opacity + '%';
+    }
+
     undoBtn.addEventListener('click', undo);
     redoBtn.addEventListener('click', redo);
     resetBtn.addEventListener('click', resetAll);
@@ -352,8 +346,32 @@
             thumb.height = 32;
             thumb.getContext('2d').drawImage(layer.canvas, 0, 0, 44, 32);
 
-            const label = document.createElement('span');
-            label.textContent = 'Layer ' + layer.id;
+            const name = document.createElement('span');
+            name.className = 'layer-name';
+            name.textContent = 'Layer ' + layer.id;
+
+            // Per-layer Blur Transparent
+            const opWrap = document.createElement('div');
+            opWrap.className = 'layer-opacity';
+
+            const opLabel = document.createElement('label');
+            opLabel.textContent = 'Transparent';
+
+            const opInput = document.createElement('input');
+            opInput.type = 'range';
+            opInput.min = '0';
+            opInput.max = '100';
+            opInput.step = '1';
+            opInput.value = String(layer.opacity);
+            opInput.setAttribute('aria-label', 'Blur Transparent for Layer ' + layer.id);
+
+            const opOutput = document.createElement('output');
+            opOutput.dataset.id = String(layer.id);
+            opOutput.textContent = layer.opacity + '%';
+
+            opInput.addEventListener('input', () => setLayerOpacity(layer.id, opInput.value));
+
+            opWrap.append(opLabel, opInput, opOutput);
 
             const del = document.createElement('button');
             del.type = 'button';
@@ -363,7 +381,7 @@
             del.textContent = '\u00D7';
             del.addEventListener('click', () => deleteLayer(layer.id));
 
-            chip.append(thumb, label, del);
+            chip.append(thumb, name, opWrap, del);
             layersPanel.appendChild(chip);
         });
     }
@@ -523,7 +541,12 @@
         patch.height = h;
         patch.getContext('2d').drawImage(big, pad, pad, w, h, 0, 0, w, h);
 
-        commit(layers.concat([{ id: nextLayerId++, x, y, w, h, canvas: patch }]));
+        commit(layers.concat([{
+            id: nextLayerId++,
+            x, y, w, h,
+            canvas: patch,
+            opacity: DEFAULT_OPACITY
+        }]));
     }
 
     /* ================= Download ================= */
