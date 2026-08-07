@@ -58,7 +58,7 @@
     button:hover { background: #0056b3; }
     button:disabled { background: #adb5bd; cursor: not-allowed; }
 
-    /* ===== Drop Zone (նկարի UI-ի նման) ===== */
+    /* ===== Drop Zone ===== */
     .drop-zone {
         width: min(920px, 92vw);
         background: #f7f8fc;
@@ -98,7 +98,7 @@
         display: block;
         max-width: min(92vw, 920px);
         max-height: 70vh;
-        cursor: crosshair;           /* խաչ կուրսոր */
+        cursor: crosshair;
         background: #fff;
         box-shadow: 0 2px 12px rgba(0,0,0,.15);
         border-radius: 4px;
@@ -154,7 +154,7 @@
 (() => {
     'use strict';
 
-    const BLUR_RADIUS = 10; // ֆիքսված blur (ուժգնության ֆունկցիան հեռացված է)
+    const BLUR_RADIUS = 10; // ֆիքսված blur
 
     const dropZone      = document.getElementById('dropZone');
     const chooseFileBtn = document.getElementById('chooseFileBtn');
@@ -173,8 +173,36 @@
     let selecting = false;
     let startX = 0, startY = 0;
 
+    // Blur-ված հատվածները որպես առանձին երտեր
+    const blurRegions = [];
+
+    function getOpacity() {
+        return parseInt(opacityInput.value, 10) / 100;
+    }
+
+    /* ============ Render․ բազային նկար + blur շերտեր ============ */
+    function render() {
+        if (!originalImage) return;
+        ctx.save();
+        ctx.filter = 'none';
+        ctx.globalAlpha = 1;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(originalImage, 0, 0);
+
+        const alpha = getOpacity();
+        if (alpha > 0) {
+            ctx.globalAlpha = alpha; // Blur Transparent %
+            for (const r of blurRegions) {
+                ctx.drawImage(r.canvas, r.x, r.y);
+            }
+        }
+        ctx.restore();
+    }
+
+    // Սլայդերը աշխատում է blur-ը կիրառելուց ՀԵՏՈ (live)
     opacityInput.addEventListener('input', () => {
         opacityValue.textContent = opacityInput.value + '%';
+        render();
     });
 
     /* ================= HTML5 Drag & Drop ================= */
@@ -199,7 +227,6 @@
         const file = e.dataTransfer.files && e.dataTransfer.files[0];
         if (file) loadFile(file);
     });
-    // Կանխում է բրաուզերին՝ ֆայլը բացելուց, երբ քաշում են zone-ից դուրս
     ['dragover', 'drop'].forEach(type =>
         window.addEventListener(type, e => e.preventDefault())
     );
@@ -246,7 +273,8 @@
                 originalImage = img;
                 canvas.width  = img.naturalWidth;
                 canvas.height = img.naturalHeight;
-                redrawBase();
+                blurRegions.length = 0;
+                render();
                 dropZone.style.display = 'none';
                 editor.style.display = 'flex';
                 downloadBtn.disabled = false;
@@ -255,15 +283,6 @@
             img.src = ev.target.result;
         };
         reader.readAsDataURL(file);
-    }
-
-    function redrawBase() {
-        ctx.save();
-        ctx.globalAlpha = 1;
-        ctx.filter = 'none';
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(originalImage, 0, 0);
-        ctx.restore();
     }
 
     /* ============ Rectangle ընտրություն + Blur ============ */
@@ -315,33 +334,32 @@
         const ry = Math.min(startY, ey);
         const rw = Math.abs(ex - startX);
         const rh = Math.abs(ey - startY);
-        if (rw < 3 || rh < 3) return; // պաշտպանում է պատահական սեղմումից
-        applyBlurToRegion(rx, ry, rw, rh);
+        if (rw < 3 || rh < 3) return;
+        addBlurRegion(Math.round(rx), Math.round(ry), Math.round(rw), Math.round(rh));
     });
 
-    function applyBlurToRegion(x, y, w, h) {
-        const alpha = parseInt(opacityInput.value, 10) / 100; // Blur Transparent %
-        if (alpha <= 0) return;
-
-        // pad-ը կանխում է blur-ի եզրային արտեֆակտները
+    /* Blur շերտի ստեղծում (pad-ը կանխում է եզրային արտեֆակտները) */
+    function addBlurRegion(x, y, w, h) {
+        w = Math.max(1, w);
+        h = Math.max(1, h);
         const pad = BLUR_RADIUS * 3;
-        const sx = x - pad, sy = y - pad;
-        const sw = w + pad * 2, sh = h + pad * 2;
+        const bw = w + pad * 2, bh = h + pad * 2;
 
-        const tmp = document.createElement('canvas');
-        tmp.width  = Math.max(1, Math.round(sw));
-        tmp.height = Math.max(1, Math.round(sh));
-        const tctx = tmp.getContext('2d');
-        tctx.filter = 'blur(' + BLUR_RADIUS + 'px)';
-        tctx.drawImage(canvas, sx, sy, sw, sh, 0, 0, sw, sh);
+        const big = document.createElement('canvas');
+        big.width = bw;
+        big.height = bh;
+        const bctx = big.getContext('2d');
+        bctx.filter = 'blur(' + BLUR_RADIUS + 'px)';
+        bctx.drawImage(canvas, x - pad, y - pad, bw, bh, 0, 0, bw, bh);
+        bctx.filter = 'none';
 
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(x, y, w, h);
-        ctx.clip();
-        ctx.globalAlpha = alpha;
-        ctx.drawImage(tmp, sx, sy);
-        ctx.restore();
+        const patch = document.createElement('canvas');
+        patch.width = w;
+        patch.height = h;
+        patch.getContext('2d').drawImage(big, pad, pad, w, h, 0, 0, w, h);
+
+        blurRegions.push({ x, y, w, h, canvas: patch });
+        render();
     }
 
     /* ================= Download ================= */
