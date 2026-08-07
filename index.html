@@ -28,12 +28,7 @@
             padding: 2rem 1rem;
         }
 
-        .container {
-            width: 100%;
-            max-width: 800px;
-            text-align: center;
-        }
-
+        .container { width: 100%; max-width: 800px; text-align: center; }
         h1 { font-size: 2.5rem; margin-bottom: 0.5rem; letter-spacing: -0.05em; }
         p.subtitle { color: var(--muted); margin-bottom: 2rem; }
 
@@ -63,22 +58,15 @@
             background: var(--card);
             margin-bottom: 1.5rem;
             border: 1px solid var(--border);
-            aspect-ratio: auto;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
         canvas { 
-            width: 100%; 
-            height: auto; 
-            display: block;
-            position: absolute;
-            top: 0;
-            left: 0;
+            width: 100%; height: auto; display: block;
+            position: absolute; top: 0; left: 0;
         }
-        
-        #maskCanvas {
-            z-index: 2;
-            cursor: crosshair;
-        }
+        #overlayCanvas { z-index: 2; cursor: crosshair; }
         #mainCanvas { z-index: 1; }
 
         .controls {
@@ -93,14 +81,9 @@
             justify-content: space-between;
         }
 
-        .slider-group { flex: 1; min-width: 180px; text-align: left; }
+        .slider-group { flex: 1; min-width: 160px; text-align: left; }
         .slider-group label { display: block; color: var(--muted); font-size: 0.875rem; margin-bottom: 0.5rem; }
-        
-        input[type="range"] {
-            width: 100%;
-            accent-color: var(--accent);
-            cursor: pointer;
-        }
+        input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
 
         .btn-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
@@ -112,25 +95,24 @@
             font-size: 0.875rem;
             cursor: pointer;
             transition: opacity 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
         }
         button:hover { opacity: 0.9; }
+        button svg { width: 16px; height: 16px; fill: currentColor; }
 
         .btn-primary { background: var(--accent); color: white; }
         .btn-secondary { background: var(--border); color: var(--text); }
         .btn-danger { background: var(--danger); color: white; }
 
-        .hint {
-            font-size: 0.8rem;
-            color: var(--muted);
-            margin-top: 0.75rem;
-            text-align: left;
-        }
+        .hint { font-size: 0.8rem; color: var(--muted); margin-top: 0.75rem; text-align: left; }
 
         @media (max-width: 600px) {
             h1 { font-size: 1.75rem; }
             .controls { flex-direction: column; align-items: stretch; }
             .btn-group { justify-content: stretch; }
-            .btn-group button { flex: 1; }
+            .btn-group button { flex: 1; justify-content: center; }
         }
     </style>
 </head>
@@ -138,7 +120,7 @@
 
 <div class="container">
     <h1>Blur This Sh*t</h1>
-    <p class="subtitle">Վերբեռնեք, գծեք blur-ի հատվածը, ներբեռնեք</p>
+    <p class="subtitle">Վերբեռնեք, ընտրեք հատվածը ուղղանկյունով, կարգավորեք blur-ը</p>
 
     <div class="upload-area" id="dropZone">
         <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">📁 Քաշեք նկարը այստեղ</p>
@@ -149,7 +131,7 @@
     <div class="editor" id="editor">
         <div class="canvas-wrapper" id="canvasWrapper">
             <canvas id="mainCanvas"></canvas>
-            <canvas id="maskCanvas"></canvas>
+            <canvas id="overlayCanvas"></canvas>
         </div>
 
         <div class="controls">
@@ -158,16 +140,25 @@
                 <input type="range" id="blurRange" min="1" max="100" value="15">
             </div>
             <div class="slider-group">
-                <label for="brushSize">Brush չափ: <span id="brushValue">40</span>px</label>
-                <input type="range" id="brushSize" min="5" max="200" value="40">
+                <label for="opacityRange">Blur Transparent: <span id="opacityValue">100</span>%</label>
+                <input type="range" id="opacityRange" min="0" max="100" value="100">
             </div>
             <div class="btn-group">
-                <button class="btn-danger" id="clearMaskBtn">🧹 Մաքրել</button>
-                <button class="btn-secondary" id="newBtn">📁 Նոր</button>
-                <button class="btn-primary" id="downloadBtn">⬇ Ներբեռնել</button>
+                <button class="btn-danger" id="clearBtn" title="Մաքրել ընտրությունը">
+                    <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                    Մաքրել
+                </button>
+                <button class="btn-secondary" id="newBtn" title="Նոր նկար">
+                    <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                    Նոր
+                </button>
+                <button class="btn-primary" id="downloadBtn" title="Ներբեռնել">
+                    <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                    Ներբեռնել
+                </button>
             </div>
         </div>
-        <p class="hint">💡 Խորհուրդ. գծեք մկնիկով կամ մատով՝ blur-ի ենթակա հատվածը ընտրելու համար։ Կարմիր երանգը ցույց է տալիս ձեր ընտրությունը։</p>
+        <p class="hint">💡 Սեղմեք և քաշեք մկնիկով՝ ուղղանկյուն ընտրելու համար։ Blur Transparent-ը կարգավորում է blur-ի թափանցիկությունը։</p>
     </div>
 </div>
 
@@ -177,30 +168,30 @@
     const editor = document.getElementById('editor');
     const canvasWrapper = document.getElementById('canvasWrapper');
     const mainCanvas = document.getElementById('mainCanvas');
-    const maskCanvas = document.getElementById('maskCanvas');
+    const overlayCanvas = document.getElementById('overlayCanvas');
     const mainCtx = mainCanvas.getContext('2d', { willReadFrequently: true });
-    const maskCtx = maskCanvas.getContext('2d', { willReadFrequently: true });
+    const overlayCtx = overlayCanvas.getContext('2d');
     const blurRange = document.getElementById('blurRange');
     const blurValue = document.getElementById('blurValue');
-    const brushSize = document.getElementById('brushSize');
-    const brushValue = document.getElementById('brushValue');
+    const opacityRange = document.getElementById('opacityRange');
+    const opacityValue = document.getElementById('opacityValue');
     const downloadBtn = document.getElementById('downloadBtn');
-    const clearMaskBtn = document.getElementById('clearMaskBtn');
+    const clearBtn = document.getElementById('clearBtn');
     const newBtn = document.getElementById('newBtn');
 
     let originalImage = null;
     let fileName = 'blurred-image.png';
     let originalData = null;
     let blurredData = null;
-    let isDrawing = false;
-    let lastPos = null;
+    let maskData = null; // Uint8Array same size as canvas, 0 or 255
+    let isSelecting = false;
+    let selStart = null;
+    let selEnd = null;
 
-    // Upload
+    // === Native HTML5 Drag & Drop (dnd-core requires React/bundler, not usable in single HTML) ===
     dropZone.addEventListener('click', () => fileInput.click());
-    dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropZone.classList.add('dragover');
-    });
+    dropZone.addEventListener('dragenter', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
     dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
     dropZone.addEventListener('drop', (e) => {
         e.preventDefault();
@@ -226,29 +217,33 @@
     function initCanvas() {
         dropZone.classList.add('hidden');
         editor.classList.add('active');
-        
-        mainCanvas.width = maskCanvas.width = originalImage.naturalWidth;
-        mainCanvas.height = maskCanvas.height = originalImage.naturalHeight;
-        
-        // Adjust wrapper height
-        const ratio = originalImage.naturalHeight / originalImage.naturalWidth;
-        canvasWrapper.style.paddingTop = (ratio * 100) + '%';
-        
-        // Draw original
+
+        const w = originalImage.naturalWidth;
+        const h = originalImage.naturalHeight;
+        mainCanvas.width = overlayCanvas.width = w;
+        mainCanvas.height = overlayCanvas.height = h;
+
+        canvasWrapper.style.paddingTop = ((h / w) * 100) + '%';
+
         mainCtx.drawImage(originalImage, 0, 0);
-        originalData = mainCtx.getImageData(0, 0, mainCanvas.width, mainCanvas.height);
-        
-        // Clear mask
-        clearMask();
+        originalData = mainCtx.getImageData(0, 0, w, h);
+
+        // Init mask (all zeros = no blur)
+        maskData = new Uint8Array(w * h);
+
+        clearOverlay();
         renderImage();
     }
 
     function clearMask() {
-        maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
+        if (maskData) maskData.fill(0);
+    }
+
+    function clearOverlay() {
+        overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
     }
 
     function renderBlurredSource() {
-        // Apply filter and re-capture
         const offscreen = document.createElement('canvas');
         offscreen.width = mainCanvas.width;
         offscreen.height = mainCanvas.height;
@@ -259,94 +254,123 @@
     }
 
     function renderImage() {
-        if (!originalData) return;
-        
-        // Re-render blurred version when blur changes
+        if (!originalData || !maskData) return;
+
         renderBlurredSource();
-        
-        const maskData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height).data;
-        const outData = mainCtx.createImageData(mainCanvas.width, mainCanvas.height);
+
+        const opacity = parseInt(opacityRange.value) / 100;
         const o = originalData.data;
         const b = blurredData.data;
+        const outData = mainCtx.createImageData(mainCanvas.width, mainCanvas.height);
         const d = outData.data;
-        
-        for (let i = 0; i < o.length; i += 4) {
-            const alpha = maskData[i + 3] / 255; // 0..1 blend
-            d[i]     = o[i]     * (1 - alpha) + b[i]     * alpha;
-            d[i + 1] = o[i + 1] * (1 - alpha) + b[i + 1] * alpha;
-            d[i + 2] = o[i + 2] * (1 - alpha) + b[i + 2] * alpha;
-            d[i + 3] = 255;
+        const len = maskData.length;
+
+        for (let i = 0; i < len; i++) {
+            const alpha = maskData[i] ? opacity : 0;
+            const pi = i * 4;
+            d[pi]     = o[pi]     * (1 - alpha) + b[pi]     * alpha;
+            d[pi + 1] = o[pi + 1] * (1 - alpha) + b[pi + 1] * alpha;
+            d[pi + 2] = o[pi + 2] * (1 - alpha) + b[pi + 2] * alpha;
+            d[pi + 3] = 255;
         }
-        
+
         mainCtx.putImageData(outData, 0, 0);
     }
 
-    // Mouse / Touch drawing
+    // === Rectangle Selection on Overlay Canvas ===
     function getPos(e) {
-        const rect = maskCanvas.getBoundingClientRect();
-        const scaleX = maskCanvas.width / rect.width;
-        const scaleY = maskCanvas.height / rect.height;
+        const rect = overlayCanvas.getBoundingClientRect();
+        const scaleX = overlayCanvas.width / rect.width;
+        const scaleY = overlayCanvas.height / rect.height;
         const point = e.touches ? e.touches[0] : e;
         return {
-            x: (point.clientX - rect.left) * scaleX,
-            y: (point.clientY - rect.top) * scaleY
+            x: Math.round((point.clientX - rect.left) * scaleX),
+            y: Math.round((point.clientY - rect.top) * scaleY)
         };
     }
 
-    function startDraw(e) {
+    function startSelect(e) {
         e.preventDefault();
-        isDrawing = true;
-        lastPos = getPos(e);
-        draw(e);
+        isSelecting = true;
+        selStart = getPos(e);
+        selEnd = { ...selStart };
     }
 
-    function draw(e) {
-        if (!isDrawing) return;
+    function updateSelect(e) {
+        if (!isSelecting) return;
         e.preventDefault();
-        const pos = getPos(e);
-        const size = parseInt(brushSize.value);
-        
-        maskCtx.lineCap = 'round';
-        maskCtx.lineJoin = 'round';
-        maskCtx.strokeStyle = 'rgba(255, 255, 255, 1)';
-        maskCtx.lineWidth = size;
-        
-        maskCtx.beginPath();
-        maskCtx.moveTo(lastPos.x, lastPos.y);
-        maskCtx.lineTo(pos.x, pos.y);
-        maskCtx.stroke();
-        
-        lastPos = pos;
+        selEnd = getPos(e);
+        drawSelectionRect();
+    }
+
+    function endSelect(e) {
+        if (!isSelecting) return;
+        isSelecting = false;
+
+        // Normalize rect
+        const x1 = Math.min(selStart.x, selEnd.x);
+        const y1 = Math.min(selStart.y, selEnd.y);
+        const x2 = Math.max(selStart.x, selEnd.x);
+        const y2 = Math.max(selStart.y, selEnd.y);
+
+        // Apply to mask
+        const w = mainCanvas.width;
+        for (let y = y1; y <= y2; y++) {
+            for (let x = x1; x <= x2; x++) {
+                if (x >= 0 && x < w && y >= 0 && y < mainCanvas.height) {
+                    maskData[y * w + x] = 255;
+                }
+            }
+        }
+
+        clearOverlay();
         renderImage();
+        selStart = null;
+        selEnd = null;
     }
 
-    function endDraw() {
-        isDrawing = false;
-        lastPos = null;
+    function drawSelectionRect() {
+        clearOverlay();
+        if (!selStart || !selEnd) return;
+
+        const x = Math.min(selStart.x, selEnd.x);
+        const y = Math.min(selStart.y, selEnd.y);
+        const w = Math.abs(selEnd.x - selStart.x);
+        const h = Math.abs(selEnd.y - selStart.y);
+
+        overlayCtx.fillStyle = 'rgba(99, 102, 241, 0.25)';
+        overlayCtx.fillRect(x, y, w, h);
+        overlayCtx.strokeStyle = '#6366f1';
+        overlayCtx.lineWidth = 2;
+        overlayCtx.setLineDash([6, 3]);
+        overlayCtx.strokeRect(x, y, w, h);
+        overlayCtx.setLineDash([]);
     }
 
-    maskCanvas.addEventListener('mousedown', startDraw);
-    maskCanvas.addEventListener('mousemove', draw);
-    window.addEventListener('mouseup', endDraw);
-    window.addEventListener('mouseleave', endDraw);
+    // Mouse events
+    overlayCanvas.addEventListener('mousedown', startSelect);
+    window.addEventListener('mousemove', updateSelect);
+    window.addEventListener('mouseup', endSelect);
 
-    maskCanvas.addEventListener('touchstart', startDraw, { passive: false });
-    maskCanvas.addEventListener('touchmove', draw, { passive: false });
-    maskCanvas.addEventListener('touchend', endDraw);
-    maskCanvas.addEventListener('touchcancel', endDraw);
+    // Touch events
+    overlayCanvas.addEventListener('touchstart', startSelect, { passive: false });
+    window.addEventListener('touchmove', updateSelect, { passive: false });
+    window.addEventListener('touchend', endSelect);
 
-    // UI Controls
+    // === Controls ===
     blurRange.addEventListener('input', () => {
         blurValue.textContent = blurRange.value;
         renderImage();
     });
-    
-    brushSize.addEventListener('input', () => {
-        brushValue.textContent = brushSize.value;
+
+    opacityRange.addEventListener('input', () => {
+        opacityValue.textContent = opacityRange.value;
+        renderImage();
     });
 
-    clearMaskBtn.addEventListener('click', () => {
+    clearBtn.addEventListener('click', () => {
         clearMask();
+        clearOverlay();
         renderImage();
     });
 
@@ -355,9 +379,13 @@
         dropZone.classList.remove('hidden');
         fileInput.value = '';
         originalImage = null;
+        originalData = null;
+        blurredData = null;
+        maskData = null;
     });
 
     downloadBtn.addEventListener('click', () => {
+        if (!originalData) return;
         const link = document.createElement('a');
         link.download = fileName;
         link.href = mainCanvas.toDataURL('image/png');
