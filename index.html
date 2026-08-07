@@ -206,7 +206,7 @@
 
     <!-- Undo / Redo -->
     <div class="history-bar">
-        <button type="button" id="undoBtn" title="Undo (Ctrl+Z)" disabled>
+        <button type="button" id="undoBtn" title="Նախորդ (Ctrl+Z)" disabled>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M9 14 4 9l5-5"></path>
@@ -214,7 +214,7 @@
             </svg>
             Նախորդ
         </button>
-        <button type="button" id="redoBtn" title="Redo (Ctrl+Y)" disabled>
+        <button type="button" id="redoBtn" title="Հաջորդ (Ctrl+Y)" disabled>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="m15 14 5-5-5-5"></path>
@@ -367,7 +367,7 @@
         if (layers.length === 0) {
             const empty = document.createElement('span');
             empty.className = 'layers-empty';
-            empty.textContent = 'No layers';
+            empty.textContent = 'Շերտեր չկան';
             layersPanel.appendChild(empty);
             return;
         }
@@ -382,13 +382,13 @@
 
             const name = document.createElement('span');
             name.className = 'layer-name';
-            name.textContent = 'Layer ' + layer.id;
+            name.textContent = 'Շերտ ' + layer.id;
 
             const opWrap = document.createElement('div');
             opWrap.className = 'layer-opacity';
 
             const opLabel = document.createElement('label');
-            opLabel.textContent = 'Transparent';
+            opLabel.textContent = 'Թափանցիկություն';
 
             const opInput = document.createElement('input');
             opInput.type = 'range';
@@ -396,7 +396,7 @@
             opInput.max = '100';
             opInput.step = '1';
             opInput.value = String(layer.opacity);
-            opInput.setAttribute('aria-label', 'Blur Transparent for Layer ' + layer.id);
+            opInput.setAttribute('aria-label', 'Շերտի թափանցիկություն ' + layer.id);
 
             const opOutput = document.createElement('output');
             opOutput.dataset.id = String(layer.id);
@@ -409,8 +409,8 @@
             const del = document.createElement('button');
             del.type = 'button';
             del.className = 'layer-delete';
-            del.title = 'Delete Layer ' + layer.id;
-            del.setAttribute('aria-label', 'Delete Layer ' + layer.id);
+            del.title = 'Ջնջել շերտը ' + layer.id;
+            del.setAttribute('aria-label', 'Ջնջել շերտը ' + layer.id);
             del.textContent = '\u00D7';
             del.addEventListener('click', () => deleteLayer(layer.id));
 
@@ -485,7 +485,7 @@
 
     function loadFile(file) {
         if (!file.type || !file.type.startsWith('image/')) {
-            showError('Invalid file. Please choose an image (JPG, PNG, GIF).');
+            showError('Անվավեր ֆայլ։ Խնդրում ենք ընտրել նկար (JPG, PNG, GIF):');
             return;
         }
         const reader = new FileReader();
@@ -504,7 +504,7 @@
                 downloadBtn.disabled = false;
                 restartBtn.disabled = false;
             };
-            img.onerror = () => showError('Failed to load image.');
+            img.onerror = () => showError('Չհաջողվեց բեռնել նկարը։');
             img.src = ev.target.result;
         };
         reader.readAsDataURL(file);
@@ -609,12 +609,11 @@
     /* ================= Download ================= */
     downloadBtn.addEventListener('click', () => {
         const a = document.createElement('a');
-        a.download = 'blurred-image.png';
+        a.download = 'Blurred-Image.png';
         a.href = canvas.toDataURL('image/png');
         a.click();
     });
 })();
 </script>
-
 </body>
 </html>
