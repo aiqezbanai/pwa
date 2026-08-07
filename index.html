@@ -13,6 +13,7 @@
             --muted: #a1a1aa;
             --accent: #6366f1;
             --accent-hover: #4f46e5;
+            --danger: #ef4444;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
@@ -36,7 +37,6 @@
         h1 { font-size: 2.5rem; margin-bottom: 0.5rem; letter-spacing: -0.05em; }
         p.subtitle { color: var(--muted); margin-bottom: 2rem; }
 
-        /* Upload Area */
         .upload-area {
             border: 2px dashed var(--border);
             border-radius: 12px;
@@ -52,7 +52,6 @@
         }
         .upload-area.hidden { display: none; }
 
-        /* Editor */
         .editor { display: none; width: 100%; }
         .editor.active { display: block; }
 
@@ -64,9 +63,23 @@
             background: var(--card);
             margin-bottom: 1.5rem;
             border: 1px solid var(--border);
+            aspect-ratio: auto;
         }
 
-        canvas { width: 100%; height: auto; display: block; }
+        canvas { 
+            width: 100%; 
+            height: auto; 
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        #maskCanvas {
+            z-index: 2;
+            cursor: crosshair;
+        }
+        #mainCanvas { z-index: 1; }
 
         .controls {
             background: var(--card);
@@ -76,11 +89,11 @@
             display: flex;
             flex-wrap: wrap;
             gap: 1.5rem;
-            align-items: center;
+            align-items: flex-end;
             justify-content: space-between;
         }
 
-        .slider-group { flex: 1; min-width: 200px; text-align: left; }
+        .slider-group { flex: 1; min-width: 180px; text-align: left; }
         .slider-group label { display: block; color: var(--muted); font-size: 0.875rem; margin-bottom: 0.5rem; }
         
         input[type="range"] {
@@ -89,13 +102,14 @@
             cursor: pointer;
         }
 
-        .btn-group { display: flex; gap: 0.75rem; }
+        .btn-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
         button {
-            padding: 0.75rem 1.5rem;
+            padding: 0.6rem 1rem;
             border-radius: 8px;
             border: none;
             font-weight: 600;
+            font-size: 0.875rem;
             cursor: pointer;
             transition: opacity 0.2s;
         }
@@ -103,6 +117,14 @@
 
         .btn-primary { background: var(--accent); color: white; }
         .btn-secondary { background: var(--border); color: var(--text); }
+        .btn-danger { background: var(--danger); color: white; }
+
+        .hint {
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-top: 0.75rem;
+            text-align: left;
+        }
 
         @media (max-width: 600px) {
             h1 { font-size: 1.75rem; }
@@ -116,31 +138,36 @@
 
 <div class="container">
     <h1>Blur This Sh*t</h1>
-    <p class="subtitle">Վերբեռնեք նկար, աղոտացրեք և ներբեռնեք</p>
+    <p class="subtitle">Վերբեռնեք, գծեք blur-ի հատվածը, ներբեռնեք</p>
 
-    <!-- Upload -->
     <div class="upload-area" id="dropZone">
         <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">📁 Քաշեք նկարը այստեղ</p>
         <p style="color: var(--muted); font-size: 0.875rem;">կամ սեղմեք ընտրելու համար</p>
         <input type="file" id="fileInput" accept="image/*" style="display:none">
     </div>
 
-    <!-- Editor -->
     <div class="editor" id="editor">
-        <div class="canvas-wrapper">
-            <canvas id="canvas"></canvas>
+        <div class="canvas-wrapper" id="canvasWrapper">
+            <canvas id="mainCanvas"></canvas>
+            <canvas id="maskCanvas"></canvas>
         </div>
 
         <div class="controls">
             <div class="slider-group">
-                <label for="blurRange">Blur ուժգնություն: <span id="blurValue">10</span>px</label>
-                <input type="range" id="blurRange" min="0" max="100" value="10">
+                <label for="blurRange">Blur ուժգնություն: <span id="blurValue">15</span>px</label>
+                <input type="range" id="blurRange" min="1" max="100" value="15">
+            </div>
+            <div class="slider-group">
+                <label for="brushSize">Brush չափ: <span id="brushValue">40</span>px</label>
+                <input type="range" id="brushSize" min="5" max="200" value="40">
             </div>
             <div class="btn-group">
-                <button class="btn-secondary" id="resetBtn">↺ Վերականգնել</button>
+                <button class="btn-danger" id="clearMaskBtn">🧹 Մաքրել</button>
+                <button class="btn-secondary" id="newBtn">📁 Նոր</button>
                 <button class="btn-primary" id="downloadBtn">⬇ Ներբեռնել</button>
             </div>
         </div>
+        <p class="hint">💡 Խորհուրդ. գծեք մկնիկով կամ մատով՝ blur-ի ենթակա հատվածը ընտրելու համար։ Կարմիր երանգը ցույց է տալիս ձեր ընտրությունը։</p>
     </div>
 </div>
 
@@ -148,32 +175,38 @@
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('fileInput');
     const editor = document.getElementById('editor');
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
+    const canvasWrapper = document.getElementById('canvasWrapper');
+    const mainCanvas = document.getElementById('mainCanvas');
+    const maskCanvas = document.getElementById('maskCanvas');
+    const mainCtx = mainCanvas.getContext('2d', { willReadFrequently: true });
+    const maskCtx = maskCanvas.getContext('2d', { willReadFrequently: true });
     const blurRange = document.getElementById('blurRange');
     const blurValue = document.getElementById('blurValue');
+    const brushSize = document.getElementById('brushSize');
+    const brushValue = document.getElementById('brushValue');
     const downloadBtn = document.getElementById('downloadBtn');
-    const resetBtn = document.getElementById('resetBtn');
+    const clearMaskBtn = document.getElementById('clearMaskBtn');
+    const newBtn = document.getElementById('newBtn');
 
     let originalImage = null;
     let fileName = 'blurred-image.png';
+    let originalData = null;
+    let blurredData = null;
+    let isDrawing = false;
+    let lastPos = null;
 
-    // Upload handlers
+    // Upload
     dropZone.addEventListener('click', () => fileInput.click());
-    
     dropZone.addEventListener('dragover', (e) => {
         e.preventDefault();
         dropZone.classList.add('dragover');
     });
-    
     dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-    
     dropZone.addEventListener('drop', (e) => {
         e.preventDefault();
         dropZone.classList.remove('dragover');
         if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
     });
-
     fileInput.addEventListener('change', (e) => {
         if (e.target.files.length) handleFile(e.target.files[0]);
     });
@@ -181,47 +214,153 @@
     function handleFile(file) {
         if (!file.type.startsWith('image/')) return alert('Խնդրում ենք ընտրել նկար');
         fileName = file.name.replace(/\.[^/.]+$/, '') + '-blurred.png';
-        
         const reader = new FileReader();
         reader.onload = (e) => {
             originalImage = new Image();
-            originalImage.onload = () => {
-                dropZone.classList.add('hidden');
-                editor.classList.add('active');
-                renderCanvas();
-            };
+            originalImage.onload = initCanvas;
             originalImage.src = e.target.result;
         };
         reader.readAsDataURL(file);
     }
 
-    // Render with blur
-    function renderCanvas() {
-        if (!originalImage) return;
-        canvas.width = originalImage.naturalWidth;
-        canvas.height = originalImage.naturalHeight;
+    function initCanvas() {
+        dropZone.classList.add('hidden');
+        editor.classList.add('active');
         
-        const blur = parseInt(blurRange.value);
-        ctx.filter = `blur(${blur}px)`;
-        ctx.drawImage(originalImage, 0, 0);
-        ctx.filter = 'none';
+        mainCanvas.width = maskCanvas.width = originalImage.naturalWidth;
+        mainCanvas.height = maskCanvas.height = originalImage.naturalHeight;
         
-        blurValue.textContent = blur;
+        // Adjust wrapper height
+        const ratio = originalImage.naturalHeight / originalImage.naturalWidth;
+        canvasWrapper.style.paddingTop = (ratio * 100) + '%';
+        
+        // Draw original
+        mainCtx.drawImage(originalImage, 0, 0);
+        originalData = mainCtx.getImageData(0, 0, mainCanvas.width, mainCanvas.height);
+        
+        // Clear mask
+        clearMask();
+        renderImage();
     }
 
-    blurRange.addEventListener('input', renderCanvas);
+    function clearMask() {
+        maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
+    }
 
-    // Reset
-    resetBtn.addEventListener('click', () => {
-        blurRange.value = 0;
-        renderCanvas();
+    function renderBlurredSource() {
+        // Apply filter and re-capture
+        const offscreen = document.createElement('canvas');
+        offscreen.width = mainCanvas.width;
+        offscreen.height = mainCanvas.height;
+        const offCtx = offscreen.getContext('2d');
+        offCtx.filter = `blur(${blurRange.value}px)`;
+        offCtx.drawImage(originalImage, 0, 0);
+        blurredData = offCtx.getImageData(0, 0, offscreen.width, offscreen.height);
+    }
+
+    function renderImage() {
+        if (!originalData) return;
+        
+        // Re-render blurred version when blur changes
+        renderBlurredSource();
+        
+        const maskData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height).data;
+        const outData = mainCtx.createImageData(mainCanvas.width, mainCanvas.height);
+        const o = originalData.data;
+        const b = blurredData.data;
+        const d = outData.data;
+        
+        for (let i = 0; i < o.length; i += 4) {
+            const alpha = maskData[i + 3] / 255; // 0..1 blend
+            d[i]     = o[i]     * (1 - alpha) + b[i]     * alpha;
+            d[i + 1] = o[i + 1] * (1 - alpha) + b[i + 1] * alpha;
+            d[i + 2] = o[i + 2] * (1 - alpha) + b[i + 2] * alpha;
+            d[i + 3] = 255;
+        }
+        
+        mainCtx.putImageData(outData, 0, 0);
+    }
+
+    // Mouse / Touch drawing
+    function getPos(e) {
+        const rect = maskCanvas.getBoundingClientRect();
+        const scaleX = maskCanvas.width / rect.width;
+        const scaleY = maskCanvas.height / rect.height;
+        const point = e.touches ? e.touches[0] : e;
+        return {
+            x: (point.clientX - rect.left) * scaleX,
+            y: (point.clientY - rect.top) * scaleY
+        };
+    }
+
+    function startDraw(e) {
+        e.preventDefault();
+        isDrawing = true;
+        lastPos = getPos(e);
+        draw(e);
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const pos = getPos(e);
+        const size = parseInt(brushSize.value);
+        
+        maskCtx.lineCap = 'round';
+        maskCtx.lineJoin = 'round';
+        maskCtx.strokeStyle = 'rgba(255, 255, 255, 1)';
+        maskCtx.lineWidth = size;
+        
+        maskCtx.beginPath();
+        maskCtx.moveTo(lastPos.x, lastPos.y);
+        maskCtx.lineTo(pos.x, pos.y);
+        maskCtx.stroke();
+        
+        lastPos = pos;
+        renderImage();
+    }
+
+    function endDraw() {
+        isDrawing = false;
+        lastPos = null;
+    }
+
+    maskCanvas.addEventListener('mousedown', startDraw);
+    maskCanvas.addEventListener('mousemove', draw);
+    window.addEventListener('mouseup', endDraw);
+    window.addEventListener('mouseleave', endDraw);
+
+    maskCanvas.addEventListener('touchstart', startDraw, { passive: false });
+    maskCanvas.addEventListener('touchmove', draw, { passive: false });
+    maskCanvas.addEventListener('touchend', endDraw);
+    maskCanvas.addEventListener('touchcancel', endDraw);
+
+    // UI Controls
+    blurRange.addEventListener('input', () => {
+        blurValue.textContent = blurRange.value;
+        renderImage();
+    });
+    
+    brushSize.addEventListener('input', () => {
+        brushValue.textContent = brushSize.value;
     });
 
-    // Download
+    clearMaskBtn.addEventListener('click', () => {
+        clearMask();
+        renderImage();
+    });
+
+    newBtn.addEventListener('click', () => {
+        editor.classList.remove('active');
+        dropZone.classList.remove('hidden');
+        fileInput.value = '';
+        originalImage = null;
+    });
+
     downloadBtn.addEventListener('click', () => {
         const link = document.createElement('a');
         link.download = fileName;
-        link.href = canvas.toDataURL('image/png');
+        link.href = mainCanvas.toDataURL('image/png');
         link.click();
     });
 </script>
