@@ -69,11 +69,12 @@
         text-align: center;
         cursor: pointer;
         transition: border-color .15s, background .15s;
+        position: relative;
     }
     .drop-zone.dragover { border-color: #007bff; background: #eef5ff; }
-    .drop-zone svg { margin-bottom: 18px; width: clamp(40px, 8vw, 64px); height: clamp(40px, 8vw, 64px); }
-    .drop-zone h2 { margin: 0 0 10px; font-size: clamp(1rem, 1rem + 1.2vw, 1.35rem); color: #111; }
-    .drop-zone p { margin: 0 0 22px; color: #7b8494; font-size: clamp(.78rem, .78rem + .4vw, .95rem); }
+    .drop-zone svg { margin-bottom: 18px; width: clamp(40px, 8vw, 64px); height: clamp(40px, 8vw, 64px); pointer-events: none; }
+    .drop-zone h2 { margin: 0 0 10px; font-size: clamp(1rem, 1rem + 1.2vw, 1.35rem); color: #111; pointer-events: none; }
+    .drop-zone p { margin: 0 0 22px; color: #7b8494; font-size: clamp(.78rem, .78rem + .4vw, .95rem); pointer-events: none; }
 
     #chooseFileBtn {
         background: #fff;
@@ -83,10 +84,12 @@
         padding: 10px 26px;
         font-size: clamp(.82rem, .82rem + .3vw, .95rem);
         font-weight: 700;
+        pointer-events: auto; /* Ապահովում է կոճակի աշխատանքը */
+        z-index: 2;
     }
     #chooseFileBtn:hover { background: #f2f2f2; }
 
-    .drop-error { display: none; color: #d93025; font-size: .85rem; margin-bottom: 12px; }
+    .drop-error { display: none; color: #d93025; font-size: .85rem; margin-bottom: 12px; pointer-events: none; }
 
     /* ===== Editor ===== */
     .editor { display: none; flex-direction: column; align-items: center; width: 100%; }
@@ -174,8 +177,7 @@
 <header><h2>AI Qez Blur Editor</h2></header>
 
 <div class="controls">
-    <!--<button type="button" id="restartBtn" disabled>Վերագործարկել</button>-->
-    <button type="button" id="resetBtn" disabled>Վերագործարկել</button>
+    <button type="button" id="restartBtn" disabled>Վերագործարկել</button>
     <button type="button" id="downloadBtn" disabled>Ներբեռնել</button>
 </div>
 
@@ -188,14 +190,14 @@
         <path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"></path>
     </svg>
     <h2>Տեղադրեք նկար կամ սեղմեք՝ վերբեռնելու համար</h2>
-    <p>Աջակցում է JPG, PNG, GIF ձևաչափերին &bull; կամ տեղադրեք (Ctrl+V) ստեղների օգնությամբ:</p>
+    <p>Աջակցում է JPG, PNG, GIF ձևաչափերին • կամ տեղադրեք (Ctrl+V) ստեղների օգնությամբ:</p>
     <div id="dropError" class="drop-error"></div>
     <button type="button" id="chooseFileBtn">Ընտրեք ֆայլ</button>
 </div>
 
 <div id="editor" class="editor">
     <!-- Layer-ների Group-ներ -->
-    <div id="layersPanel" class="layers-panel" aria-label="Շերտեր"></div>
+    <div id="layersPanel" class="layers-panel" aria-label="Layers"></div>
 
     <div class="canvas-wrap">
         <canvas id="canvas"></canvas>
@@ -236,7 +238,6 @@
     const chooseFileBtn = document.getElementById('chooseFileBtn');
     const fileInput     = document.getElementById('fileInput');
     const restartBtn    = document.getElementById('restartBtn');
-    const resetBtn      = document.getElementById('resetBtn');
     const downloadBtn   = document.getElementById('downloadBtn');
     const editor        = document.getElementById('editor');
     const layersPanel   = document.getElementById('layersPanel');
@@ -323,7 +324,6 @@
         editor.style.display = 'none';
         dropZone.style.display = 'flex';
         downloadBtn.disabled = true;
-        resetBtn.disabled = true;
         restartBtn.disabled = true;
         undoBtn.disabled = true;
         redoBtn.disabled = true;
@@ -352,7 +352,6 @@
 
     undoBtn.addEventListener('click', undo);
     redoBtn.addEventListener('click', redo);
-    resetBtn.addEventListener('click', resetAll);
     restartBtn.addEventListener('click', restart);
 
     document.addEventListener('keydown', e => {
@@ -368,7 +367,7 @@
         if (layers.length === 0) {
             const empty = document.createElement('span');
             empty.className = 'layers-empty';
-            empty.textContent = 'Շերտեր չկան';
+            empty.textContent = 'No layers';
             layersPanel.appendChild(empty);
             return;
         }
@@ -383,13 +382,13 @@
 
             const name = document.createElement('span');
             name.className = 'layer-name';
-            name.textContent = 'Շերտ ' + layer.id;
+            name.textContent = 'Layer ' + layer.id;
 
             const opWrap = document.createElement('div');
             opWrap.className = 'layer-opacity';
 
             const opLabel = document.createElement('label');
-            opLabel.textContent = 'Թափանցիկություն';
+            opLabel.textContent = 'Transparent';
 
             const opInput = document.createElement('input');
             opInput.type = 'range';
@@ -397,7 +396,7 @@
             opInput.max = '100';
             opInput.step = '1';
             opInput.value = String(layer.opacity);
-            opInput.setAttribute('aria-label', 'Թափանցիկություն շերտի համար ' + layer.id);
+            opInput.setAttribute('aria-label', 'Blur Transparent for Layer ' + layer.id);
 
             const opOutput = document.createElement('output');
             opOutput.dataset.id = String(layer.id);
@@ -410,8 +409,8 @@
             const del = document.createElement('button');
             del.type = 'button';
             del.className = 'layer-delete';
-            del.title = 'Ջնջել շերտը ' + layer.id;
-            del.setAttribute('aria-label', 'Ջնջել շերտը ' + layer.id);
+            del.title = 'Delete Layer ' + layer.id;
+            del.setAttribute('aria-label', 'Delete Layer ' + layer.id);
             del.textContent = '\u00D7';
             del.addEventListener('click', () => deleteLayer(layer.id));
 
@@ -446,12 +445,21 @@
         window.addEventListener(type, e => e.preventDefault())
     );
 
-    /* ================= Click / Paste upload ================= */
-    dropZone.addEventListener('click', () => fileInput.click());
-    dropZone.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+    /* ================= Click / Paste upload (Շտկված) ================= */
+    
+    // Ընդհանուր դաշտի սեղմում
+    dropZone.addEventListener('click', (e) => {
+        // Եթե սեղմվել է հենց կոճակը, թողնում ենք, որ կոճակի listener-ը աշխատի
+        if (e.target === chooseFileBtn) return;
+        fileInput.click();
     });
-    chooseFileBtn.addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
+
+    // "Ընտրեք ֆայլ" կոճակի սեղմում
+    chooseFileBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Կանխում է dropZone-ի click-ը
+        fileInput.click();
+    });
+
     fileInput.addEventListener('change', () => {
         if (fileInput.files && fileInput.files[0]) loadFile(fileInput.files[0]);
         fileInput.value = '';
@@ -477,7 +485,7 @@
 
     function loadFile(file) {
         if (!file.type || !file.type.startsWith('image/')) {
-            showError('Անվավեր ֆայլ։ Խնդրում ենք ընտրել նկար (JPG, PNG, GIF):');
+            showError('Invalid file. Please choose an image (JPG, PNG, GIF).');
             return;
         }
         const reader = new FileReader();
@@ -494,10 +502,9 @@
                 dropZone.style.display = 'none';
                 editor.style.display = 'flex';
                 downloadBtn.disabled = false;
-                resetBtn.disabled = false;
                 restartBtn.disabled = false;
             };
-            img.onerror = () => showError('Չհաջողվեց բեռնել նկարը։');
+            img.onerror = () => showError('Failed to load image.');
             img.src = ev.target.result;
         };
         reader.readAsDataURL(file);
