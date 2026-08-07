@@ -84,7 +84,7 @@
         padding: 10px 26px;
         font-size: clamp(.82rem, .82rem + .3vw, .95rem);
         font-weight: 700;
-        pointer-events: auto; /* Ապահովում է կոճակի աշխատանքը */
+        pointer-events: auto;
         z-index: 2;
     }
     #chooseFileBtn:hover { background: #f2f2f2; }
@@ -206,7 +206,7 @@
 
     <!-- Undo / Redo -->
     <div class="history-bar">
-        <button type="button" id="undoBtn" title="Նախորդ (Ctrl+Z)" disabled>
+        <button type="button" id="undoBtn" title="Undo (Ctrl+Z)" disabled>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M9 14 4 9l5-5"></path>
@@ -214,7 +214,7 @@
             </svg>
             Նախորդ
         </button>
-        <button type="button" id="redoBtn" title="Հաջորդ (Ctrl+Y)" disabled>
+        <button type="button" id="redoBtn" title="Redo (Ctrl+Y)" disabled>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="m15 14 5-5-5-5"></path>
@@ -233,6 +233,7 @@
 
     const BLUR_RADIUS = 10;
     const DEFAULT_OPACITY = 100;
+    const TRANSPARENT_COLOR = '#ffffff'; // Transparent-ի գույնը՝ սպիտակ
 
     const dropZone      = document.getElementById('dropZone');
     const chooseFileBtn = document.getElementById('chooseFileBtn');
@@ -268,6 +269,12 @@
 
         for (const r of layers) {
             const alpha = r.opacity / 100;
+
+            // Transparent-ի գույնը սպիտակ է․ blur-ի տակից երևում է սպիտակ ֆոն
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = TRANSPARENT_COLOR;
+            ctx.fillRect(r.x, r.y, r.w, r.h);
+
             if (alpha <= 0) continue;
             ctx.globalAlpha = alpha;
             ctx.drawImage(r.canvas, r.x, r.y);
@@ -302,12 +309,6 @@
         render();
         renderLayerPanel();
         updateHistoryButtons();
-    }
-
-    function resetAll() {
-        history.length = 0;
-        historyIndex = -1;
-        commit([]);
     }
 
     // Վերագործարկել․ ջնջում է նկարը և վերադառնում հիմնական էջին
@@ -367,7 +368,7 @@
         if (layers.length === 0) {
             const empty = document.createElement('span');
             empty.className = 'layers-empty';
-            empty.textContent = 'Շերտեր չկան';
+            empty.textContent = 'No layers';
             layersPanel.appendChild(empty);
             return;
         }
@@ -382,13 +383,13 @@
 
             const name = document.createElement('span');
             name.className = 'layer-name';
-            name.textContent = 'Շերտ ' + layer.id;
+            name.textContent = 'Layer ' + layer.id;
 
             const opWrap = document.createElement('div');
             opWrap.className = 'layer-opacity';
 
             const opLabel = document.createElement('label');
-            opLabel.textContent = 'Թափանցիկություն';
+            opLabel.textContent = 'Transparent';
 
             const opInput = document.createElement('input');
             opInput.type = 'range';
@@ -396,7 +397,7 @@
             opInput.max = '100';
             opInput.step = '1';
             opInput.value = String(layer.opacity);
-            opInput.setAttribute('aria-label', 'Շերտի թափանցիկություն ' + layer.id);
+            opInput.setAttribute('aria-label', 'Blur Transparent for Layer ' + layer.id);
 
             const opOutput = document.createElement('output');
             opOutput.dataset.id = String(layer.id);
@@ -409,8 +410,8 @@
             const del = document.createElement('button');
             del.type = 'button';
             del.className = 'layer-delete';
-            del.title = 'Ջնջել շերտը ' + layer.id;
-            del.setAttribute('aria-label', 'Ջնջել շերտը ' + layer.id);
+            del.title = 'Delete Layer ' + layer.id;
+            del.setAttribute('aria-label', 'Delete Layer ' + layer.id);
             del.textContent = '\u00D7';
             del.addEventListener('click', () => deleteLayer(layer.id));
 
@@ -445,18 +446,14 @@
         window.addEventListener(type, e => e.preventDefault())
     );
 
-    /* ================= Click / Paste upload (Շտկված) ================= */
-    
-    // Ընդհանուր դաշտի սեղմում
+    /* ================= Click / Paste upload ================= */
     dropZone.addEventListener('click', (e) => {
-        // Եթե սեղմվել է հենց կոճակը, թողնում ենք, որ կոճակի listener-ը աշխատի
         if (e.target === chooseFileBtn) return;
         fileInput.click();
     });
 
-    // "Ընտրեք ֆայլ" կոճակի սեղմում
     chooseFileBtn.addEventListener('click', (e) => {
-        e.stopPropagation(); // Կանխում է dropZone-ի click-ը
+        e.stopPropagation();
         fileInput.click();
     });
 
@@ -485,7 +482,7 @@
 
     function loadFile(file) {
         if (!file.type || !file.type.startsWith('image/')) {
-            showError('Անվավեր ֆայլ։ Խնդրում ենք ընտրել նկար (JPG, PNG, GIF):');
+            showError('Invalid file. Please choose an image (JPG, PNG, GIF).');
             return;
         }
         const reader = new FileReader();
@@ -504,7 +501,7 @@
                 downloadBtn.disabled = false;
                 restartBtn.disabled = false;
             };
-            img.onerror = () => showError('Չհաջողվեց բեռնել նկարը։');
+            img.onerror = () => showError('Failed to load image.');
             img.src = ev.target.result;
         };
         reader.readAsDataURL(file);
@@ -609,11 +606,12 @@
     /* ================= Download ================= */
     downloadBtn.addEventListener('click', () => {
         const a = document.createElement('a');
-        a.download = 'Blurred-Image.png';
+        a.download = 'blurred-image.png';
         a.href = canvas.toDataURL('image/png');
         a.click();
     });
 })();
 </script>
+
 </body>
 </html>
