@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Blur Editor 2.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
     * { box-sizing: border-box; }
 
@@ -11,8 +14,6 @@
         width: 100%;
         min-height: 100%;
         margin: 0;
-        overflow-x: hidden;
-        overflow-y: auto;
     }
 
     body {
@@ -20,32 +21,34 @@
         flex-direction: column;
         align-items: center;
         background: #f0f2f5;
-        font-family: Verdana, Geneva, Tahoma, sans-serif;
-        padding: 0 10px 40px;
+        font-family: 'Inter', sans-serif;
+        padding: 0 16px 40px;
+        overflow-x: hidden;
     }
 
     header {
         width: 100%;
         background: #fff;
         box-shadow: 0 2px 4px rgba(0,0,0,.08);
-        padding: 14px 0;
+        padding: clamp(10px, 2vw, 14px) 0;
         text-align: center;
-        margin-bottom: 24px;
+        margin-bottom: clamp(16px, 3vw, 24px);
     }
-    header h2 { margin: 0; font-size: clamp(1rem, 1rem + 1vw, 1.3rem); color: #222; }
+    header h2 { margin: 0; font-size: clamp(1rem, 0.8rem + 1vw, 1.3rem); color: #222; }
 
     .controls {
-        width: min(1080px, 100%);
+        width: 100%;
+        max-width: 1080px;
         background: #fff;
         border-radius: 8px;
         box-shadow: 0 2px 10px rgba(0,0,0,.1);
-        padding: 14px 20px;
+        padding: clamp(10px, 2vw, 14px) clamp(12px, 3vw, 20px);
         display: none;
-        gap: 16px;
+        gap: clamp(8px, 2vw, 16px);
         align-items: center;
         justify-content: center;
         flex-wrap: wrap;
-        margin-bottom: 24px;
+        margin-bottom: clamp(16px, 3vw, 24px);
     }
 
     .controls.visible {
@@ -66,24 +69,31 @@
     button:hover { background: #0056b3; }
     button:disabled { background: #adb5bd; cursor: not-allowed; }
 
-    /* ===== Zoom Bar ===== */
     .zoom-container {
         display: none;
-        width: min(1080px, 100%);
+        width: 100%;
+        max-width: 1080px;
         justify-content: center;
-        flex-wrap: wrap;
-        margin-bottom: 12px;
-        gap: 10px;
         align-items: center;
+        gap: clamp(6px, 1.5vw, 10px);
+        margin-bottom: clamp(8px, 2vw, 12px);
     }
     .zoom-container.visible {
         display: flex;
     }
+    .zoom-container label,
+    .zoom-container span {
+        font-size: clamp(0.8rem, 2vw, 0.95rem);
+        font-weight: 600;
+        color: #333;
+        white-space: nowrap;
+    }
 
-    /* ===== Drop Zone ===== */
     .drop-zone {
-        width: min(920px, 100%);
-        min-height: 340px;
+        width: 100%;
+        max-width: 920px;
+        min-height: 280px;
+        height: auto;
         background: #f7f8fc;
         border: 2px dashed #ccd3e0;
         border-radius: 10px;
@@ -99,8 +109,8 @@
     }
     .drop-zone.dragover { border-color: #007bff; background: #eef5ff; }
     .drop-zone svg { margin-bottom: 18px; width: 48px; height: 48px; pointer-events: none; }
-    .drop-zone h2 { margin: 0 0 10px; font-size: clamp(1rem, 1rem + 1vw, 1.2rem); color: #111; pointer-events: none; }
-    .drop-zone p { margin: 0 0 22px; color: #7b8494; font-size: 0.9rem; pointer-events: none; }
+    .drop-zone h2 { margin: 0 0 10px; font-size: clamp(1rem, 3vw, 1.2rem); color: #111; pointer-events: none; }
+    .drop-zone p { margin: 0 0 22px; color: #7b8494; font-size: clamp(0.8rem, 2vw, 0.9rem); pointer-events: none; }
 
     #chooseFileBtn {
         background: #fff;
@@ -117,15 +127,13 @@
 
     .drop-error { display: none; color: #d93025; font-size: .85rem; margin-bottom: 12px; pointer-events: none; }
 
-    /* ===== Editor ===== */
-    .editor { display: none; flex-direction: column; align-items: center; width: 100%; }
-    
+    .editor { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 1080px; }
+
     .canvas-wrap { 
         position: relative; 
         line-height: 0; 
-        width: min(1080px, 100%);
-        aspect-ratio: 1 / 1;
-        height: auto;
+        width: min(92vw, 1080px);
+        height: min(92vw, 1080px);
         overflow: hidden; 
         display: flex; 
         align-items: center; 
@@ -146,10 +154,6 @@
 
     #canvas {
         display: block;
-        max-width: 100%;
-        max-height: 100%;
-        width: auto;
-        height: auto;
         transform-origin: center;
         background: #fff;
         touch-action: none;
@@ -163,7 +167,6 @@
         pointer-events: none;
     }
 
-    /* ===== Layers Group ===== */
     .layers-panel {
         display: flex;
         gap: 8px;
@@ -172,7 +175,8 @@
         justify-content: center;
         margin-bottom: 12px;
         min-height: 44px;
-        width: min(1080px, 100%);
+        width: 100%;
+        max-width: 1080px;
     }
     .layers-empty { font-size: .82rem; color: #8a94a4; align-self: center; }
     .layer-chip {
@@ -204,10 +208,27 @@
     }
     .layer-delete:hover { background: #fdecea; }
 
-    /* ===== Undo / Redo ===== */
-    .history-bar { display: flex; gap: 12px; margin-top: 14px; margin-bottom: 14px; flex-wrap: wrap; justify-content: center; width: min(1080px, 100%); }
+    .history-bar {
+        display: flex;
+        gap: 12px;
+        margin-top: clamp(10px, 2vw, 14px);
+        margin-bottom: clamp(10px, 2vw, 14px);
+        flex-wrap: wrap;
+        justify-content: center;
+        width: 100%;
+        max-width: 1080px;
+    }
     .history-bar button { display: inline-flex; align-items: center; gap: 8px; }
     .history-bar svg { flex: 0 0 auto; }
+
+    @media (max-width: 600px) {
+        body { padding: 0 10px 30px; }
+        .controls { gap: 6px; }
+        .canvas-wrap { width: 95vw; height: 95vw; }
+        .layer-chip { flex-direction: column; align-items: flex-start; }
+        .layer-opacity input[type="range"] { width: 100%; }
+        .history-bar { gap: 6px; }
+    }
 </style>
 </head>
 <body>
@@ -245,9 +266,6 @@
         <canvas id="canvas"></canvas>
         <div id="selectionBox"></div>
     </div>
-	
-	<br>
-	</br>
 
     <div class="history-bar">
         <button type="button" id="undoBtn" title="Նախորդ (Ctrl+Z)" disabled>
@@ -729,7 +747,10 @@
         patch.width = w;
         patch.height = h;
         const pctx = patch.getContext('2d');
-
+        
+        // Ensure full opacity: first fill with opaque background color,
+        // then draw blurred region on top. This makes the patch completely opaque,
+        // so the original image underneath is not visible.
         const bgColor = getAverageBackgroundColor();
         pctx.fillStyle = `rgb(${bgColor.r}, ${bgColor.g}, ${bgColor.b})`;
         pctx.fillRect(0, 0, w, h);
