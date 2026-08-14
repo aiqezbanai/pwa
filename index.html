@@ -293,7 +293,7 @@
 (() => {
     'use strict';
 
-    const BLUR_RADIUS = 50; // 500% (10px * 500%)
+    const BLUR_RADIUS = 10; // 100% blur strength
     const DEFAULT_OPACITY = 100;
 
     const dropZone        = document.getElementById('dropZone');
@@ -729,29 +729,97 @@
     window.addEventListener('touchmove', e => { if (selecting || panning) { e.preventDefault(); moveSelect(e); } }, { passive: false });
     window.addEventListener('touchend', endSelect);
 
+    // Manual separable box blur to ensure cross‑browser/device support
+    function applyBoxBlur(context, width, height, radius) {
+        if (radius <= 0) return;
+        const imageData = context.getImageData(0, 0, width, height);
+        const pixels = imageData.data;
+        const w = width;
+        const h = height;
+        const tmp = new Uint8ClampedArray(pixels.length);
+        const div = 2 * radius + 1;
+
+        // Horizontal pass
+        for (let y = 0; y < h; y++) {
+            let r = 0, g = 0, b = 0, a = 0;
+            for (let i = -radius; i <= radius; i++) {
+                const xi = Math.min(w - 1, Math.max(0, i));
+                const idx = (y * w + xi) * 4;
+                r += pixels[idx]; g += pixels[idx + 1]; b += pixels[idx + 2]; a += pixels[idx + 3];
+            }
+            for (let x = 0; x < w; x++) {
+                const idx = (y * w + x) * 4;
+                tmp[idx] = r / div; tmp[idx + 1] = g / div; tmp[idx + 2] = b / div; tmp[idx + 3] = a / div;
+
+                const addX = x + radius + 1;
+                const removeX = x - radius;
+                if (addX < w) {
+                    const addIdx = (y * w + addX) * 4;
+                    r += pixels[addIdx]; g += pixels[addIdx + 1]; b += pixels[addIdx + 2]; a += pixels[addIdx + 3];
+                }
+                if (removeX >= 0) {
+                    const remIdx = (y * w + removeX) * 4;
+                    r -= pixels[remIdx]; g -= pixels[remIdx + 1]; b -= pixels[remIdx + 2]; a -= pixels[remIdx + 3];
+                }
+            }
+        }
+
+        // Vertical pass
+        for (let x = 0; x < w; x++) {
+            let r = 0, g = 0, b = 0, a = 0;
+            for (let i = -radius; i <= radius; i++) {
+                const yi = Math.min(h - 1, Math.max(0, i));
+                const idx = (yi * w + x) * 4;
+                r += tmp[idx]; g += tmp[idx + 1]; b += tmp[idx + 2]; a += tmp[idx + 3];
+            }
+            for (let y = 0; y < h; y++) {
+                const idx = (y * w + x) * 4;
+                pixels[idx] = r / div; pixels[idx + 1] = g / div; pixels[idx + 2] = b / div; pixels[idx + 3] = a / div;
+
+                const addY = y + radius + 1;
+                const removeY = y - radius;
+                if (addY < h) {
+                    const addIdx = (addY * w + x) * 4;
+                    r += tmp[addIdx]; g += tmp[addIdx + 1]; b += tmp[addIdx + 2]; a += tmp[addIdx + 3];
+                }
+                if (removeY >= 0) {
+                    const remIdx = (removeY * w + x) * 4;
+                    r -= tmp[remIdx]; g -= tmp[remIdx + 1]; b -= tmp[remIdx + 2]; a -= tmp[remIdx + 3];
+                }
+            }
+        }
+
+        context.putImageData(imageData, 0, 0);
+    }
+
     function addBlurRegion(x, y, w, h) {
         w = Math.max(1, w);
         h = Math.max(1, h);
         const pad = BLUR_RADIUS * 3;
-        const bw = w + pad * 2, bh = h + pad * 2;
+        const bw = w + pad * 2;
+        const bh = h + pad * 2;
 
+        const bgColor = getAverageBackgroundColor();
+        const bgFill = `rgb(${bgColor.r}, ${bgColor.g}, ${bgColor.b})`;
+
+        // Create a large canvas, fill with background, draw the surrounding area
         const big = document.createElement('canvas');
         big.width = bw;
         big.height = bh;
         const bctx = big.getContext('2d');
-        bctx.filter = 'blur(' + BLUR_RADIUS + 'px)';
+        bctx.fillStyle = bgFill;
+        bctx.fillRect(0, 0, bw, bh);
         bctx.drawImage(canvas, x - pad, y - pad, bw, bh, 0, 0, bw, bh);
-        bctx.filter = 'none';
 
+        // Apply manual blur to the large canvas
+        applyBoxBlur(bctx, bw, bh, BLUR_RADIUS);
+
+        // Create patch canvas with opaque background and blurred region on top
         const patch = document.createElement('canvas');
         patch.width = w;
         patch.height = h;
         const pctx = patch.getContext('2d');
-        
-        // Ensure 100% opacity: fill opaque background color first,
-        // then draw blurred region. This makes the patch completely opaque.
-        const bgColor = getAverageBackgroundColor();
-        pctx.fillStyle = `rgb(${bgColor.r}, ${bgColor.g}, ${bgColor.b})`;
+        pctx.fillStyle = bgFill;
         pctx.fillRect(0, 0, w, h);
         pctx.drawImage(big, pad, pad, w, h, 0, 0, w, h);
 
