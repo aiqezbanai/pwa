@@ -292,9 +292,10 @@
     let selecting = false;
     let panning = false;
     let spacePressed = false;
-    let startX = 0, startY = 0;
-    let panStartX = 0, panStartY = 0;
-    let scrollLeftStart = 0, scrollTopStart = 0;
+    let startX = 0, startY = 0;           // selection start (canvas coords)
+    let panStartX = 0, panStartY = 0;     // pan start (client coords)
+    let panStartPanX = 0, panStartPanY = 0; // pan offsets at start
+    let panX = 0, panY = 0;               // current pan offsets (screen pixels)
     let nextLayerId = 1;
 
     let layers = [];
@@ -376,6 +377,7 @@
         nextLayerId = 1;
         selecting = false;
         panning = false;
+        spacePressed = false;
         selectionBox.style.display = 'none';
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         layersPanel.innerHTML = '';
@@ -386,6 +388,9 @@
         undoBtn.disabled = true;
         redoBtn.disabled = true;
         fileInput.value = '';
+        panX = 0;
+        panY = 0;
+        updateTransform();
     }
 
     function updateHistoryButtons() {
@@ -413,7 +418,7 @@
     restartBtn.addEventListener('click', restart);
 
     document.addEventListener('keydown', e => {
-        if (e.code === 'Space' && e.target === document.body) {
+        if (e.code === 'Space' && editor.style.display === 'flex') {
             e.preventDefault();
         }
         if (e.code === 'Space' && !spacePressed) {
@@ -430,13 +435,21 @@
         if (e.code === 'Space') {
             spacePressed = false;
             canvasWrap.classList.remove('panning');
+            if (panning) {
+                panning = false;
+            }
         }
     });
 
+    function updateTransform() {
+        const scale = parseInt(zoomRange.value, 10) / 100;
+        canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+    }
+
     function updateZoom() {
         const val = parseInt(zoomRange.value, 10);
-        canvas.style.transform = `scale(${val / 100})`;
         zoomVal.textContent = val + '%';
+        updateTransform();
     }
 
     zoomRange.addEventListener('input', updateZoom);
@@ -577,6 +590,8 @@
                 controlsSection.classList.add('visible');
                 zoomContainer.classList.add('visible');
                 zoomRange.value = 100;
+                panX = 0;
+                panY = 0;
                 updateZoom();
             };
             img.onerror = () => showError('Չհաջողվեց բեռնել նկարը։');
@@ -605,12 +620,13 @@
         if (e.type === 'mousedown' && e.button !== 0) return;
         
         if (spacePressed) {
+            // Start panning
             panning = true;
             const pt = getPointerXY(e);
             panStartX = pt.clientX;
             panStartY = pt.clientY;
-            scrollLeftStart = canvasWrap.scrollLeft;
-            scrollTopStart = canvasWrap.scrollTop;
+            panStartPanX = panX;
+            panStartPanY = panY;
             e.preventDefault();
             return;
         }
@@ -635,8 +651,9 @@
             const pt = getPointerXY(e);
             const dx = pt.clientX - panStartX;
             const dy = pt.clientY - panStartY;
-            canvasWrap.scrollLeft = scrollLeftStart - dx;
-            canvasWrap.scrollTop = scrollTopStart - dy;
+            panX = panStartPanX + dx;
+            panY = panStartPanY + dy;
+            updateTransform();
             e.preventDefault();
             return;
         }
