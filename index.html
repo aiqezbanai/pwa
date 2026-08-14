@@ -1,17 +1,22 @@
 <!DOCTYPE html>
-<html lang="hy" style="width: 2048px; height: 437px; overflow: hidden;">
+<html lang="hy">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
 <title>Blur Editor 2.0</title>
 <style>
+    :root {
+        --canvas-scale: 1;
+    }
+
     * { box-sizing: border-box; }
 
     html, body {
-        width: 2048px;
-        height: 437px;
+        width: 100%;
+        min-height: 100vh;
         margin: 0;
-        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: auto;
     }
 
     body {
@@ -20,30 +25,42 @@
         align-items: center;
         background: #f0f2f5;
         font-family: Verdana, Geneva, Tahoma, sans-serif;
-        padding-bottom: 40px;
+        padding: 12px 8px 40px;
     }
 
     header {
         width: 100%;
+        max-width: 1080px;
         background: #fff;
         box-shadow: 0 2px 4px rgba(0,0,0,.08);
-        padding: 14px 0;
+        padding: 14px 16px;
         text-align: center;
-        margin-bottom: 24px;
+        margin-bottom: 20px;
+        border-radius: 8px;
     }
     header h2 { margin: 0; font-size: clamp(1rem, 1rem + 1vw, 1.3rem); color: #222; }
 
+    .controls,
+    .zoom-container,
+    .layers-panel,
+    .history-bar {
+        width: 100%;
+        max-width: 1080px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
     .controls {
-        width: 1080px;
         background: #fff;
         border-radius: 8px;
         box-shadow: 0 2px 10px rgba(0,0,0,.1);
-        padding: 14px 20px;
+        padding: 14px 16px;
         display: none;
         gap: 16px;
         align-items: center;
         justify-content: center;
-        margin-bottom: 24px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
     }
 
     .controls.visible {
@@ -51,39 +68,42 @@
     }
 
     button {
-        padding: 8px 16px;
+        padding: 10px 18px;
         background: #007bff;
         color: #fff;
         border: none;
-        border-radius: 4px;
+        border-radius: 6px;
         cursor: pointer;
         font-weight: 600;
         font-family: inherit;
         transition: background .2s;
+        font-size: 0.9rem;
     }
     button:hover { background: #0056b3; }
     button:disabled { background: #adb5bd; cursor: not-allowed; }
 
-    /* ===== Zoom Bar ===== */
     .zoom-container {
         display: none;
-        width: 1080px;
         justify-content: center;
         margin-bottom: 12px;
         gap: 10px;
         align-items: center;
+        flex-wrap: wrap;
     }
     .zoom-container.visible {
         display: flex;
     }
+    .zoom-container label { font-size: 0.9rem; font-weight: 600; }
+    .zoom-container input[type="range"] { width: 200px; max-width: 60vw; }
+    .zoom-container span { min-width: 60px; font-weight: 700; color: #007bff; }
 
-    /* ===== Drop Zone ===== */
     .drop-zone {
-        width: 920px;
-        height: 340px;
+        width: 92%;
+        max-width: 920px;
+        min-height: 300px;
         background: #f7f8fc;
         border: 2px dashed #ccd3e0;
-        border-radius: 10px;
+        border-radius: 12px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -92,6 +112,8 @@
         cursor: pointer;
         transition: border-color .15s, background .15s;
         position: relative;
+        padding: 20px;
+        margin: 0 auto 20px;
     }
     .drop-zone.dragover { border-color: #007bff; background: #eef5ff; }
     .drop-zone svg { margin-bottom: 18px; width: 48px; height: 48px; pointer-events: none; }
@@ -113,12 +135,63 @@
 
     .drop-error { display: none; color: #d93025; font-size: .85rem; margin-bottom: 12px; pointer-events: none; }
 
-    /* ===== Editor ===== */
     .editor { display: none; flex-direction: column; align-items: center; width: 100%; }
-    
+
+    .layers-panel {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: stretch;
+        justify-content: center;
+        margin-bottom: 12px;
+        min-height: 44px;
+    }
+    .layers-empty { font-size: .82rem; color: #8a94a4; align-self: center; }
+    .layer-chip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #fff;
+        border: 1px solid #d5dae2;
+        border-radius: 6px;
+        padding: 6px 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,.08);
+        flex-wrap: wrap;
+    }
+    .layer-chip canvas { border-radius: 3px; border: 1px solid #e3e7ee; }
+    .layer-chip > span.layer-name { font-size: .78rem; font-weight: 600; color: #333; white-space: nowrap; }
+    .layer-opacity { display: flex; align-items: center; gap: 6px; }
+    .layer-opacity label { font-size: .7rem; font-weight: 600; color: #555; white-space: nowrap; }
+    .layer-opacity input[type="range"] { width: 80px; cursor: pointer; }
+    .layer-opacity output { min-width: 38px; font-size: .7rem; font-weight: 700; color: #007bff; }
+    .layer-delete {
+        background: transparent;
+        color: #d93025;
+        padding: 2px 8px;
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+    .layer-delete:hover { background: #fdecea; }
+
+    .canvas-scale-wrapper {
+        width: 100%;
+        height: calc(1080px * var(--canvas-scale, 1));
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        margin-bottom: 20px;
+    }
+
     .canvas-wrap { 
-        position: relative; 
-        line-height: 0; 
+        position: absolute;
+        left: 50%;
+        top: 0;
+        transform: translateX(-50%) scale(var(--canvas-scale, 1));
+        transform-origin: top center;
         width: 1080px;
         height: 1080px;
         overflow: hidden; 
@@ -154,51 +227,33 @@
         pointer-events: none;
     }
 
-    /* ===== Layers Group ===== */
-    .layers-panel {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        align-items: stretch;
-        justify-content: center;
-        margin-bottom: 12px;
-        min-height: 44px;
-        width: 1080px;
+    .history-bar { 
+        display: flex; 
+        gap: 12px; 
+        margin-top: 14px; 
+        margin-bottom: 14px; 
+        flex-wrap: wrap; 
+        justify-content: center; 
     }
-    .layers-empty { font-size: .82rem; color: #8a94a4; align-self: center; }
-    .layer-chip {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: #fff;
-        border: 1px solid #d5dae2;
-        border-radius: 6px;
-        padding: 6px 8px;
-        box-shadow: 0 1px 3px rgba(0,0,0,.08);
-        flex-wrap: wrap;
-    }
-    .layer-chip canvas { border-radius: 3px; border: 1px solid #e3e7ee; }
-    .layer-chip > span.layer-name { font-size: .78rem; font-weight: 600; color: #333; white-space: nowrap; }
-    .layer-opacity { display: flex; align-items: center; gap: 6px; }
-    .layer-opacity label { font-size: .7rem; font-weight: 600; color: #555; white-space: nowrap; }
-    .layer-opacity input[type="range"] { width: 80px; cursor: pointer; }
-    .layer-opacity output { min-width: 38px; font-size: .7rem; font-weight: 700; color: #007bff; }
-    .layer-delete {
-        background: transparent;
-        color: #d93025;
-        padding: 2px 8px;
-        border: none;
-        border-radius: 4px;
-        font-size: 1rem;
-        font-weight: 700;
-        line-height: 1.2;
-    }
-    .layer-delete:hover { background: #fdecea; }
-
-    /* ===== Undo / Redo ===== */
-    .history-bar { display: flex; gap: 12px; margin-top: 14px; margin-bottom: 14px; flex-wrap: wrap; justify-content: center; width: 1080px; }
     .history-bar button { display: inline-flex; align-items: center; gap: 8px; }
     .history-bar svg { flex: 0 0 auto; }
+
+    @media (max-width: 600px) {
+        .controls, .zoom-container {
+            gap: 8px;
+        }
+        button {
+            padding: 8px 12px;
+            font-size: 0.8rem;
+        }
+        .drop-zone {
+            min-height: 220px;
+            padding: 16px;
+        }
+        .drop-zone h2 { font-size: 1rem; }
+        .drop-zone p { font-size: 0.8rem; }
+        .layer-opacity input[type="range"] { width: 60px; }
+    }
 </style>
 </head>
 <body>
@@ -232,13 +287,12 @@
 <div id="editor" class="editor">
     <div id="layersPanel" class="layers-panel" aria-label="Layers"></div>
 
-    <div class="canvas-wrap" id="canvasWrap">
-        <canvas id="canvas"></canvas>
-        <div id="selectionBox"></div>
+    <div class="canvas-scale-wrapper" id="canvasScaleWrapper">
+        <div class="canvas-wrap" id="canvasWrap">
+            <canvas id="canvas"></canvas>
+            <div id="selectionBox"></div>
+        </div>
     </div>
-	
-	<br>
-	</br>
 
     <div class="history-bar">
         <button type="button" id="undoBtn" title="Նախորդ (Ctrl+Z)" disabled>
@@ -268,6 +322,7 @@
 
     const BLUR_RADIUS = 10;
     const DEFAULT_OPACITY = 100;
+    const SECTION_SIZE = 1080;
 
     const dropZone        = document.getElementById('dropZone');
     const chooseFileBtn   = document.getElementById('chooseFileBtn');
@@ -284,6 +339,7 @@
     const redoBtn         = document.getElementById('redoBtn');
     const canvas          = document.getElementById('canvas');
     const canvasWrap      = document.getElementById('canvasWrap');
+    const canvasScaleWrapper = document.getElementById('canvasScaleWrapper');
     const ctx             = canvas.getContext('2d');
     const selectionBox    = document.getElementById('selectionBox');
     const dropError       = document.getElementById('dropError');
@@ -292,10 +348,11 @@
     let selecting = false;
     let panning = false;
     let spacePressed = false;
-    let startX = 0, startY = 0;           // selection start (canvas coords)
-    let panStartX = 0, panStartY = 0;     // pan start (client coords)
-    let panStartPanX = 0, panStartPanY = 0; // pan offsets at start
-    let panX = 0, panY = 0;               // current pan offsets (screen pixels)
+    let startX = 0, startY = 0;
+    let panStartX = 0, panStartY = 0;
+    let panStartPanX = 0, panStartPanY = 0;
+    let panX = 0, panY = 0;
+    let wrapperScale = 1;
     let nextLayerId = 1;
 
     let layers = [];
@@ -454,6 +511,18 @@
 
     zoomRange.addEventListener('input', updateZoom);
 
+    function updateResponsiveScale() {
+        const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+        const availableWidth = viewportWidth - 16; // padding
+        const newScale = Math.min(1, availableWidth / SECTION_SIZE);
+        wrapperScale = newScale;
+        document.documentElement.style.setProperty('--canvas-scale', newScale.toString());
+        canvasScaleWrapper.style.height = (SECTION_SIZE * newScale) + 'px';
+    }
+
+    window.addEventListener('resize', updateResponsiveScale);
+    updateResponsiveScale();
+
     function renderLayerPanel() {
         layersPanel.innerHTML = '';
         if (layers.length === 0) {
@@ -593,6 +662,7 @@
                 panX = 0;
                 panY = 0;
                 updateZoom();
+                updateResponsiveScale(); // ensure scale after editor shown
             };
             img.onerror = () => showError('Չհաջողվեց բեռնել նկարը։');
             img.src = ev.target.result;
@@ -620,7 +690,6 @@
         if (e.type === 'mousedown' && e.button !== 0) return;
         
         if (spacePressed) {
-            // Start panning
             panning = true;
             const pt = getPointerXY(e);
             panStartX = pt.clientX;
@@ -640,8 +709,8 @@
         
         const wrapRect = canvasWrap.getBoundingClientRect();
         selectionBox.style.display = 'block';
-        selectionBox.style.left = (pt.clientX - wrapRect.left) + 'px';
-        selectionBox.style.top  = (pt.clientY - wrapRect.top)  + 'px';
+        selectionBox.style.left = ((pt.clientX - wrapRect.left) / wrapperScale) + 'px';
+        selectionBox.style.top  = ((pt.clientY - wrapRect.top) / wrapperScale) + 'px';
         selectionBox.style.width  = '0px';
         selectionBox.style.height = '0px';
     }
@@ -649,8 +718,8 @@
     function moveSelect(e) {
         if (panning) {
             const pt = getPointerXY(e);
-            const dx = pt.clientX - panStartX;
-            const dy = pt.clientY - panStartY;
+            const dx = (pt.clientX - panStartX) / wrapperScale;
+            const dy = (pt.clientY - panStartY) / wrapperScale;
             panX = panStartPanX + dx;
             panY = panStartPanY + dy;
             updateTransform();
@@ -669,10 +738,10 @@
         const startClientX = canvasRect.left + (startX / canvas.width) * canvasRect.width;
         const startClientY = canvasRect.top + (startY / canvas.height) * canvasRect.height;
 
-        selectionBox.style.left   = (Math.min(startClientX, cx) - wrapRect.left) + 'px';
-        selectionBox.style.top    = (Math.min(startClientY, cy) - wrapRect.top)  + 'px';
-        selectionBox.style.width  = Math.abs(cx - startClientX) + 'px';
-        selectionBox.style.height = Math.abs(cy - startClientY) + 'px';
+        selectionBox.style.left   = ((Math.min(startClientX, cx) - wrapRect.left) / wrapperScale) + 'px';
+        selectionBox.style.top    = ((Math.min(startClientY, cy) - wrapRect.top) / wrapperScale) + 'px';
+        selectionBox.style.width  = (Math.abs(cx - startClientX) / wrapperScale) + 'px';
+        selectionBox.style.height = (Math.abs(cy - startClientY) / wrapperScale) + 'px';
     }
 
     function endSelect(e) {
