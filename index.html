@@ -154,6 +154,10 @@
 
     #canvas {
         display: block;
+        max-width: 100%;
+        max-height: 100%;
+        width: auto;
+        height: auto;
         transform-origin: center;
         background: #fff;
         touch-action: none;
@@ -729,32 +733,63 @@
     window.addEventListener('touchmove', e => { if (selecting || panning) { e.preventDefault(); moveSelect(e); } }, { passive: false });
     window.addEventListener('touchend', endSelect);
 
+    function applyBoxBlur(cv, ctx, radius) {
+        const w = cv.width, h = cv.height;
+        const imgData = ctx.getImageData(0, 0, w, h);
+        const src = imgData.data;
+        const dst = new Uint8ClampedArray(src.length);
+        const size = radius * 2 + 1;
+        const weight = 1 / (size * size);
+
+        for (let y = 0; y < h; y++) {
+            for (let x = 0; x < w; x++) {
+                let r = 0, g = 0, b = 0, a = 0;
+                for (let dy = -radius; dy <= radius; dy++) {
+                    const yy = Math.min(Math.max(y + dy, 0), h - 1);
+                    for (let dx = -radius; dx <= radius; dx++) {
+                        const xx = Math.min(Math.max(x + dx, 0), w - 1);
+                        const idx = (yy * w + xx) * 4;
+                        r += src[idx];
+                        g += src[idx + 1];
+                        b += src[idx + 2];
+                        a += src[idx + 3];
+                    }
+                }
+                const idx = (y * w + x) * 4;
+                dst[idx]     = r * weight;
+                dst[idx + 1] = g * weight;
+                dst[idx + 2] = b * weight;
+                dst[idx + 3] = a * weight;
+            }
+        }
+
+        ctx.putImageData(new ImageData(dst, w, h), 0, 0);
+    }
+
     function addBlurRegion(x, y, w, h) {
         w = Math.max(1, w);
         h = Math.max(1, h);
-        const pad = BLUR_RADIUS * 3;
-        const bw = w + pad * 2, bh = h + pad * 2;
+        const pad = BLUR_RADIUS * 2;
+        const bw = w + pad * 2;
+        const bh = h + pad * 2;
 
-        const big = document.createElement('canvas');
-        big.width = bw;
-        big.height = bh;
-        const bctx = big.getContext('2d');
-        bctx.filter = 'blur(' + BLUR_RADIUS + 'px)';
-        bctx.drawImage(canvas, x - pad, y - pad, bw, bh, 0, 0, bw, bh);
-        bctx.filter = 'none';
+        const temp = document.createElement('canvas');
+        temp.width = bw;
+        temp.height = bh;
+        const tctx = temp.getContext('2d');
+        tctx.drawImage(canvas, x - pad, y - pad, bw, bh, 0, 0, bw, bh);
+
+        applyBoxBlur(temp, tctx, BLUR_RADIUS);
 
         const patch = document.createElement('canvas');
         patch.width = w;
         patch.height = h;
         const pctx = patch.getContext('2d');
-        
-        // Ensure full opacity: first fill with opaque background color,
-        // then draw blurred region on top. This makes the patch completely opaque,
-        // so the original image underneath is not visible.
+
         const bgColor = getAverageBackgroundColor();
         pctx.fillStyle = `rgb(${bgColor.r}, ${bgColor.g}, ${bgColor.b})`;
         pctx.fillRect(0, 0, w, h);
-        pctx.drawImage(big, pad, pad, w, h, 0, 0, w, h);
+        pctx.drawImage(temp, pad, pad, w, h, 0, 0, w, h);
 
         commit(layers.concat([{
             id: nextLayerId++,
