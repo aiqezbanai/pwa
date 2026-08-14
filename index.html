@@ -225,6 +225,25 @@
     .history-bar button { display: inline-flex; align-items: center; gap: 8px; }
     .history-bar svg { flex: 0 0 auto; }
 
+    footer {
+        width: 100%;
+        max-width: 1080px;
+        text-align: center;
+        padding: 16px 10px;
+        font-size: clamp(0.75rem, 2vw, 0.85rem);
+        color: #555;
+        border-top: 1px solid #d5dae2;
+        margin-top: auto;
+    }
+    footer a {
+        color: #007bff;
+        text-decoration: none;
+        font-weight: 600;
+    }
+    footer a:hover {
+        text-decoration: underline;
+    }
+
     @media (max-width: 600px) {
         body { padding: 0 10px 30px; }
         .controls { gap: 6px; }
@@ -291,6 +310,10 @@
     </div>
 </div>
 
+<footer>
+    © Copyright 2026 | Blur Editor 2.0 | <a href="https://github.com/aiqezbanai" target="_blank" rel="noopener noreferrer">AI QEZ BAN AI</a> | All Rights Reserved.
+</footer>
+
 <input type="file" id="fileInput" accept="image/*" hidden>
 
 <script>
@@ -298,7 +321,7 @@
     'use strict';
 
     const BLUR_RADIUS = 10;
-    const DEFAULT_OPACITY = 500; // changed from 100 to 500 as required
+    const DEFAULT_OPACITY = 100;
 
     const dropZone        = document.getElementById('dropZone');
     const chooseFileBtn   = document.getElementById('chooseFileBtn');
@@ -364,8 +387,7 @@
         ctx.drawImage(originalImage, 0, 0);
 
         for (const r of layers) {
-            // opacity now can be >100, but alpha must be clamped to 1
-            const alpha = Math.min(1, r.opacity / 100);
+            const alpha = Math.min(r.opacity, 100) / 100;
             if (alpha <= 0) continue;
             ctx.globalAlpha = alpha;
             ctx.drawImage(r.canvas, r.x, r.y);
@@ -517,7 +539,7 @@
             const opInput = document.createElement('input');
             opInput.type = 'range';
             opInput.min = '0';
-            opInput.max = '500'; // changed max from 100 to 500
+            opInput.max = '500';
             opInput.step = '1';
             opInput.value = String(layer.opacity);
             opInput.setAttribute('aria-label', 'Շերտի թափանցիկություն ' + layer.id);
@@ -734,7 +756,6 @@
     window.addEventListener('touchmove', e => { if (selecting || panning) { e.preventDefault(); moveSelect(e); } }, { passive: false });
     window.addEventListener('touchend', endSelect);
 
-    // Simple box blur implementation for reliable cross-platform blur
     function applyBoxBlur(cv, ctx, radius) {
         const w = cv.width, h = cv.height;
         const imgData = ctx.getImageData(0, 0, w, h);
@@ -788,7 +809,6 @@
         patch.height = h;
         const pctx = patch.getContext('2d');
 
-        // Fill with opaque background color to hide original underneath
         const bgColor = getAverageBackgroundColor();
         pctx.fillStyle = `rgb(${bgColor.r}, ${bgColor.g}, ${bgColor.b})`;
         pctx.fillRect(0, 0, w, h);
