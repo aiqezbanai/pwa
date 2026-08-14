@@ -1,25 +1,26 @@
 <!DOCTYPE html>
-<html lang="hy">
+<html lang="hy" style="width: 2048px; height: 437px; overflow: hidden;">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>AI Qez Blur Editor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blur Editor 2.0</title>
 <style>
     * { box-sizing: border-box; }
 
-    [hidden] { display: none !important; }
+    html, body {
+        width: 2048px;
+        height: 437px;
+        margin: 0;
+        overflow: hidden;
+    }
 
     body {
-        margin: 0;
-        min-height: 100vh;
         display: flex;
         flex-direction: column;
         align-items: center;
         background: #f0f2f5;
         font-family: Verdana, Geneva, Tahoma, sans-serif;
         padding-bottom: 40px;
-        /* Կանխում է էջի անցանկալի scroll-ը touch-ի ժամանակ */
-        overscroll-behavior-y: contain; 
     }
 
     header {
@@ -33,18 +34,20 @@
     header h2 { margin: 0; font-size: clamp(1rem, 1rem + 1vw, 1.3rem); color: #222; }
 
     .controls {
-        width: min(920px, 92vw);
+        width: 1080px;
         background: #fff;
         border-radius: 8px;
         box-shadow: 0 2px 10px rgba(0,0,0,.1);
         padding: 14px 20px;
-        display: flex;
+        display: none;
         gap: 16px;
         align-items: center;
         justify-content: center;
-        flex-wrap: wrap;
         margin-bottom: 24px;
-        min-height: 60px;
+    }
+
+    .controls.visible {
+        display: flex;
     }
 
     button {
@@ -61,25 +64,39 @@
     button:hover { background: #0056b3; }
     button:disabled { background: #adb5bd; cursor: not-allowed; }
 
+    /* ===== Zoom Bar ===== */
+    .zoom-container {
+        display: none;
+        width: 1080px;
+        justify-content: center;
+        margin-bottom: 12px;
+        gap: 10px;
+        align-items: center;
+    }
+    .zoom-container.visible {
+        display: flex;
+    }
+
     /* ===== Drop Zone ===== */
     .drop-zone {
-        width: min(920px, 92vw);
+        width: 920px;
+        height: 340px;
         background: #f7f8fc;
         border: 2px dashed #ccd3e0;
         border-radius: 10px;
-        padding: clamp(32px, 6vw, 64px) 24px;
         display: flex;
         flex-direction: column;
         align-items: center;
+        justify-content: center;
         text-align: center;
         cursor: pointer;
         transition: border-color .15s, background .15s;
         position: relative;
     }
     .drop-zone.dragover { border-color: #007bff; background: #eef5ff; }
-    .drop-zone svg { margin-bottom: 18px; width: clamp(40px, 8vw, 64px); height: clamp(40px, 8vw, 64px); pointer-events: none; }
-    .drop-zone h2 { margin: 0 0 10px; font-size: clamp(1rem, 1rem + 1.2vw, 1.35rem); color: #111; pointer-events: none; }
-    .drop-zone p { margin: 0 0 22px; color: #7b8494; font-size: clamp(.78rem, .78rem + .4vw, .95rem); pointer-events: none; }
+    .drop-zone svg { margin-bottom: 18px; width: 48px; height: 48px; pointer-events: none; }
+    .drop-zone h2 { margin: 0 0 10px; font-size: 1.2rem; color: #111; pointer-events: none; }
+    .drop-zone p { margin: 0 0 22px; color: #7b8494; font-size: 0.9rem; pointer-events: none; }
 
     #chooseFileBtn {
         background: #fff;
@@ -87,7 +104,7 @@
         border: 2px solid #000;
         border-radius: 6px;
         padding: 10px 26px;
-        font-size: clamp(.82rem, .82rem + .3vw, .95rem);
+        font-size: 0.9rem;
         font-weight: 700;
         pointer-events: auto;
         z-index: 2;
@@ -98,19 +115,35 @@
 
     /* ===== Editor ===== */
     .editor { display: none; flex-direction: column; align-items: center; width: 100%; }
-    .canvas-wrap { position: relative; line-height: 0; max-width: 100%; }
+    
+    .canvas-wrap { 
+        position: relative; 
+        line-height: 0; 
+        width: 1080px;
+        height: 1080px;
+        overflow: hidden; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center;
+        background: #ddd;
+        border-radius: 4px;
+        box-shadow: 0 2px 12px rgba(0,0,0,.15);
+        cursor: crosshair;
+    }
+
+    .canvas-wrap.panning {
+        cursor: grab;
+    }
+
+    .canvas-wrap.panning:active {
+        cursor: grabbing;
+    }
 
     #canvas {
         display: block;
-        width: auto;
-        height: auto;
-        max-width: min(92vw, 920px);
-        max-height: 70vh;
-        cursor: crosshair;
+        transform-origin: center;
         background: #fff;
-        box-shadow: 0 2px 12px rgba(0,0,0,.15);
-        border-radius: 4px;
-        touch-action: none; /* Կարևոր է canvas-ի համար */
+        touch-action: none;
     }
 
     #selectionBox {
@@ -130,61 +163,29 @@
         justify-content: center;
         margin-bottom: 12px;
         min-height: 44px;
-        width: min(920px, 92vw);
+        width: 1080px;
     }
     .layers-empty { font-size: .82rem; color: #8a94a4; align-self: center; }
-
     .layer-chip {
         display: flex;
         align-items: center;
         gap: 8px;
-        background: #333;
-        border: 1px solid #555;
+        background: #fff;
+        border: 1px solid #d5dae2;
         border-radius: 6px;
         padding: 6px 8px;
         box-shadow: 0 1px 3px rgba(0,0,0,.08);
         flex-wrap: wrap;
     }
     .layer-chip canvas { border-radius: 3px; border: 1px solid #e3e7ee; }
-    .layer-chip > span.layer-name { font-size: .78rem; font-weight: 600; color: #fff; white-space: nowrap; }
-
+    .layer-chip > span.layer-name { font-size: .78rem; font-weight: 600; color: #333; white-space: nowrap; }
     .layer-opacity { display: flex; align-items: center; gap: 6px; }
-    .layer-opacity label { font-size: .7rem; font-weight: 600; color: #fff; white-space: nowrap; }
-    
-    /* Շտկում բջային տարբերակի համար */
-    .layer-opacity input[type="range"] { 
-        width: clamp(70px, 12vw, 90px); 
-        cursor: pointer; 
-        accent-color: #fff; 
-        touch-action: none; /* Կանխում է scroll-ը սլայդերի վրա */
-        -webkit-appearance: none;
-        height: 24px; /* Ավելի մեծ touch area */
-        background: transparent;
-    }
-    /* Webkit slider thumb fix for better touch */
-    .layer-opacity input[type="range"]::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        height: 16px;
-        width: 16px;
-        border-radius: 50%;
-        background: #fff;
-        cursor: pointer;
-        margin-top: -6px; 
-        box-shadow: 0 0 2px rgba(0,0,0,0.5);
-    }
-    .layer-opacity input[type="range"]::-webkit-slider-runnable-track {
-        width: 100%;
-        height: 4px;
-        cursor: pointer;
-        background: #666;
-        border-radius: 2px;
-    }
-
-    .layer-opacity output { min-width: 38px; font-size: .7rem; font-weight: 700; color: #fff; }
-
+    .layer-opacity label { font-size: .7rem; font-weight: 600; color: #555; white-space: nowrap; }
+    .layer-opacity input[type="range"] { width: 80px; cursor: pointer; }
+    .layer-opacity output { min-width: 38px; font-size: .7rem; font-weight: 700; color: #007bff; }
     .layer-delete {
         background: transparent;
-        color: #ff6b6b;
+        color: #d93025;
         padding: 2px 8px;
         border: none;
         border-radius: 4px;
@@ -192,34 +193,29 @@
         font-weight: 700;
         line-height: 1.2;
     }
-    .layer-delete:hover { background: rgba(255, 255, 255, 0.1); }
+    .layer-delete:hover { background: #fdecea; }
 
     /* ===== Undo / Redo ===== */
-    .history-bar { display: flex; gap: 12px; margin-top: 14px; flex-wrap: wrap; justify-content: center; }
+    .history-bar { display: flex; gap: 12px; margin-top: 14px; margin-bottom: 14px; flex-wrap: wrap; justify-content: center; width: 1080px; }
     .history-bar button { display: inline-flex; align-items: center; gap: 8px; }
     .history-bar svg { flex: 0 0 auto; }
-
-    /* ===== Responsive / Adaptive ===== */
-    @media (max-width: 600px) {
-        .controls { gap: 10px; padding: 12px; }
-        button { padding: 8px 12px; font-size: .82rem; }
-        #canvas { max-height: 60vh; }
-        .layer-chip { width: 100%; justify-content: space-between; }
-        .layer-opacity input[type="range"] { flex: 1; min-width: 60px; }
-    }
 </style>
 </head>
 <body>
 
-<header><h2>AI Qez Blur Editor</h2></header>
+<header><h2>Blur Editor 2.0</h2></header>
 
-<div class="controls">
-    <!-- Անտեսանելի են, քանի դեռ նկար չի վերբեռնվել -->
-    <button type="button" id="restartBtn" hidden>Վերագործարկել</button>
-    <button type="button" id="downloadBtn" hidden>Ներբեռնել</button>
+<div class="zoom-container" id="zoomContainer">
+    <label for="zoomRange">Մասշտաբ:</label>
+    <input type="range" id="zoomRange" min="10" max="500" value="100">
+    <span id="zoomVal">100%</span>
 </div>
 
-<!-- HTML5 Drag & Drop Zone -->
+<div class="controls" id="controlsSection">
+    <button type="button" id="restartBtn">Հեռացնել պատկերը</button>
+    <button type="button" id="downloadBtn">Ներբեռնել</button>
+</div>
+
 <div id="dropZone" class="drop-zone" tabindex="0" role="button" aria-label="Upload image">
     <svg viewBox="0 0 24 24" fill="none" stroke="#8b95a5"
          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -234,17 +230,18 @@
 </div>
 
 <div id="editor" class="editor">
-    <!-- Layer-ների Group-ներ -->
     <div id="layersPanel" class="layers-panel" aria-label="Layers"></div>
 
-    <div class="canvas-wrap">
+    <div class="canvas-wrap" id="canvasWrap">
         <canvas id="canvas"></canvas>
         <div id="selectionBox"></div>
     </div>
+	
+	<br>
+	</br>
 
-    <!-- Undo / Redo -->
     <div class="history-bar">
-        <button type="button" id="undoBtn" title="Undo (Ctrl+Z)" disabled>
+        <button type="button" id="undoBtn" title="Նախորդ (Ctrl+Z)" disabled>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M9 14 4 9l5-5"></path>
@@ -252,7 +249,7 @@
             </svg>
             Նախորդ
         </button>
-        <button type="button" id="redoBtn" title="Redo (Ctrl+Y)" disabled>
+        <button type="button" id="redoBtn" title="Հաջորդ (Ctrl+Y)" disabled>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="m15 14 5-5-5-5"></path>
@@ -272,30 +269,60 @@
     const BLUR_RADIUS = 10;
     const DEFAULT_OPACITY = 100;
 
-    const dropZone      = document.getElementById('dropZone');
-    const chooseFileBtn = document.getElementById('chooseFileBtn');
-    const fileInput     = document.getElementById('fileInput');
-    const restartBtn    = document.getElementById('restartBtn');
-    const downloadBtn   = document.getElementById('downloadBtn');
-    const editor        = document.getElementById('editor');
-    const layersPanel   = document.getElementById('layersPanel');
-    const undoBtn       = document.getElementById('undoBtn');
-    const redoBtn       = document.getElementById('redoBtn');
-    const canvas        = document.getElementById('canvas');
-    const ctx           = canvas.getContext('2d');
-    const selectionBox  = document.getElementById('selectionBox');
-    const dropError     = document.getElementById('dropError');
+    const dropZone        = document.getElementById('dropZone');
+    const chooseFileBtn   = document.getElementById('chooseFileBtn');
+    const fileInput       = document.getElementById('fileInput');
+    const restartBtn      = document.getElementById('restartBtn');
+    const downloadBtn     = document.getElementById('downloadBtn');
+    const controlsSection = document.getElementById('controlsSection');
+    const zoomContainer   = document.getElementById('zoomContainer');
+    const zoomRange       = document.getElementById('zoomRange');
+    const zoomVal         = document.getElementById('zoomVal');
+    const editor          = document.getElementById('editor');
+    const layersPanel     = document.getElementById('layersPanel');
+    const undoBtn         = document.getElementById('undoBtn');
+    const redoBtn         = document.getElementById('redoBtn');
+    const canvas          = document.getElementById('canvas');
+    const canvasWrap      = document.getElementById('canvasWrap');
+    const ctx             = canvas.getContext('2d');
+    const selectionBox    = document.getElementById('selectionBox');
+    const dropError       = document.getElementById('dropError');
 
     let originalImage = null;
     let selecting = false;
+    let panning = false;
+    let spacePressed = false;
     let startX = 0, startY = 0;
+    let panStartX = 0, panStartY = 0;
+    let scrollLeftStart = 0, scrollTopStart = 0;
     let nextLayerId = 1;
 
     let layers = [];
     const history = [];
     let historyIndex = -1;
 
-    /* ================= Render ================= */
+    function getAverageBackgroundColor() {
+        if (!originalImage) return { r: 255, g: 255, b: 255 };
+        const sampleCanvas = document.createElement('canvas');
+        const sCtx = sampleCanvas.getContext('2d');
+        sampleCanvas.width = 50;
+        sampleCanvas.height = 50;
+        sCtx.drawImage(originalImage, 0, 0, 50, 50);
+        const imgData = sCtx.getImageData(0, 0, 50, 50).data;
+        let r = 0, g = 0, b = 0, count = 0;
+        for (let i = 0; i < imgData.length; i += 4) {
+            r += imgData[i];
+            g += imgData[i+1];
+            b += imgData[i+2];
+            count++;
+        }
+        return {
+            r: Math.round(r / count),
+            g: Math.round(g / count),
+            b: Math.round(b / count)
+        };
+    }
+
     function render() {
         if (!originalImage) return;
         ctx.save();
@@ -313,7 +340,6 @@
         ctx.restore();
     }
 
-    /* ================= History ================= */
     function commit(newLayers) {
         history.length = historyIndex + 1;
         history.push(newLayers);
@@ -342,7 +368,6 @@
         updateHistoryButtons();
     }
 
-    // Վերագործարկել․ ջնջում է նկարը և վերադառնում հիմնական էջին
     function restart() {
         originalImage = null;
         layers = [];
@@ -350,17 +375,14 @@
         historyIndex = -1;
         nextLayerId = 1;
         selecting = false;
+        panning = false;
         selectionBox.style.display = 'none';
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         layersPanel.innerHTML = '';
-
         editor.style.display = 'none';
+        controlsSection.classList.remove('visible');
+        zoomContainer.classList.remove('visible');
         dropZone.style.display = 'flex';
-
-        // Կոճակները նորից անտեսանելի են
-        restartBtn.hidden = true;
-        downloadBtn.hidden = true;
-
         undoBtn.disabled = true;
         redoBtn.disabled = true;
         fileInput.value = '';
@@ -391,19 +413,40 @@
     restartBtn.addEventListener('click', restart);
 
     document.addEventListener('keydown', e => {
+        if (e.code === 'Space' && e.target === document.body) {
+            e.preventDefault();
+        }
+        if (e.code === 'Space' && !spacePressed) {
+            spacePressed = true;
+            canvasWrap.classList.add('panning');
+        }
         if (!(e.ctrlKey || e.metaKey)) return;
         const k = e.key.toLowerCase();
         if (k === 'z') { e.preventDefault(); undo(); }
         else if (k === 'y') { e.preventDefault(); redo(); }
     });
 
-    /* ================= Layers Panel ================= */
+    document.addEventListener('keyup', e => {
+        if (e.code === 'Space') {
+            spacePressed = false;
+            canvasWrap.classList.remove('panning');
+        }
+    });
+
+    function updateZoom() {
+        const val = parseInt(zoomRange.value, 10);
+        canvas.style.transform = `scale(${val / 100})`;
+        zoomVal.textContent = val + '%';
+    }
+
+    zoomRange.addEventListener('input', updateZoom);
+
     function renderLayerPanel() {
         layersPanel.innerHTML = '';
         if (layers.length === 0) {
             const empty = document.createElement('span');
             empty.className = 'layers-empty';
-            empty.textContent = 'No layers';
+            empty.textContent = 'Շերտեր չկան';
             layersPanel.appendChild(empty);
             return;
         }
@@ -418,13 +461,13 @@
 
             const name = document.createElement('span');
             name.className = 'layer-name';
-            name.textContent = 'Layer ' + layer.id;
+            name.textContent = 'Շերտ ' + layer.id;
 
             const opWrap = document.createElement('div');
             opWrap.className = 'layer-opacity';
 
             const opLabel = document.createElement('label');
-            opLabel.textContent = 'Transparent';
+            opLabel.textContent = '';
 
             const opInput = document.createElement('input');
             opInput.type = 'range';
@@ -432,38 +475,29 @@
             opInput.max = '100';
             opInput.step = '1';
             opInput.value = String(layer.opacity);
-            opInput.setAttribute('aria-label', 'Blur Transparent for Layer ' + layer.id);
+            opInput.setAttribute('aria-label', 'Շերտի թափանցիկություն ' + layer.id);
 
             const opOutput = document.createElement('output');
             opOutput.dataset.id = String(layer.id);
             opOutput.textContent = layer.opacity + '%';
 
-            // Ստանդարտ input event (աշխատում է և՛ mouse, և՛ touch-ում ժամանակակից բրաուզերներում)
             opInput.addEventListener('input', () => setLayerOpacity(layer.id, opInput.value));
-            
-            // Լրացուցիչ պաշտպանություն բջային տարբերակի համար
-            // Կանխում է իրադարձության տարածումը, որպեսզի չխանգարի canvas-ի touch-ին
-            opInput.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
-            opInput.addEventListener('touchmove', (e) => e.stopPropagation(), { passive: true });
 
             opWrap.append(opLabel, opInput, opOutput);
 
             const del = document.createElement('button');
             del.type = 'button';
             del.className = 'layer-delete';
-            del.title = 'Delete Layer ' + layer.id;
-            del.setAttribute('aria-label', 'Delete Layer ' + layer.id);
+            del.title = 'Ջնջել շերտը ' + layer.id;
+            del.setAttribute('aria-label', 'Ջնջել շերտը ' + layer.id);
             del.textContent = '\u00D7';
             del.addEventListener('click', () => deleteLayer(layer.id));
-            // Կանխում է touch-ի տարածումը ջնջման կոճակի համար
-            del.addEventListener('touchend', (e) => { e.preventDefault(); deleteLayer(layer.id); });
 
             chip.append(thumb, name, opWrap, del);
             layersPanel.appendChild(chip);
         });
     }
 
-    /* ================= HTML5 Drag & Drop ================= */
     ['dragenter', 'dragover'].forEach(type =>
         dropZone.addEventListener(type, e => {
             e.preventDefault();
@@ -489,7 +523,6 @@
         window.addEventListener(type, e => e.preventDefault())
     );
 
-    /* ================= Click / Paste upload ================= */
     dropZone.addEventListener('click', (e) => {
         if (e.target === chooseFileBtn) return;
         fileInput.click();
@@ -525,7 +558,7 @@
 
     function loadFile(file) {
         if (!file.type || !file.type.startsWith('image/')) {
-            showError('Invalid file. Please choose an image (JPG, PNG, GIF).');
+            showError('Անվավեր ֆայլ։ Խնդրում ենք ընտրել նկար (JPG, PNG, GIF):');
             return;
         }
         const reader = new FileReader();
@@ -539,21 +572,19 @@
                 history.length = 0;
                 historyIndex = -1;
                 commit([]);
-
                 dropZone.style.display = 'none';
                 editor.style.display = 'flex';
-
-                // Կոճակները հայտնվում են նկարի բեռնումից հետո
-                restartBtn.hidden = false;
-                downloadBtn.hidden = false;
+                controlsSection.classList.add('visible');
+                zoomContainer.classList.add('visible');
+                zoomRange.value = 100;
+                updateZoom();
             };
-            img.onerror = () => showError('Failed to load image.');
+            img.onerror = () => showError('Չհաջողվեց բեռնել նկարը։');
             img.src = ev.target.result;
         };
         reader.readAsDataURL(file);
     }
 
-    /* ============ Pointer-based Rectangle selection ============ */
     function getPointerXY(e) {
         if (e.touches && e.touches.length) return { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
         if (e.changedTouches && e.changedTouches.length) return { clientX: e.changedTouches[0].clientX, clientY: e.changedTouches[0].clientY };
@@ -563,8 +594,8 @@
     function toCanvasCoords(clientX, clientY) {
         const rect = canvas.getBoundingClientRect();
         return {
-            x: (clientX - rect.left) * (canvas.width  / rect.width),
-            y: (clientY - rect.top)  * (canvas.height / rect.height),
+            x: (clientX - rect.left) * (canvas.width / rect.width),
+            y: (clientY - rect.top) * (canvas.height / rect.height),
             rect
         };
     }
@@ -572,34 +603,67 @@
     function startSelect(e) {
         if (!originalImage) return;
         if (e.type === 'mousedown' && e.button !== 0) return;
+        
+        if (spacePressed) {
+            panning = true;
+            const pt = getPointerXY(e);
+            panStartX = pt.clientX;
+            panStartY = pt.clientY;
+            scrollLeftStart = canvasWrap.scrollLeft;
+            scrollTopStart = canvasWrap.scrollTop;
+            e.preventDefault();
+            return;
+        }
+
         e.preventDefault();
         selecting = true;
         const pt = getPointerXY(e);
         const p = toCanvasCoords(pt.clientX, pt.clientY);
         startX = p.x;
         startY = p.y;
+        
+        const wrapRect = canvasWrap.getBoundingClientRect();
         selectionBox.style.display = 'block';
-        selectionBox.style.left = (pt.clientX - p.rect.left) + 'px';
-        selectionBox.style.top  = (pt.clientY - p.rect.top)  + 'px';
+        selectionBox.style.left = (pt.clientX - wrapRect.left) + 'px';
+        selectionBox.style.top  = (pt.clientY - wrapRect.top)  + 'px';
         selectionBox.style.width  = '0px';
         selectionBox.style.height = '0px';
     }
 
     function moveSelect(e) {
+        if (panning) {
+            const pt = getPointerXY(e);
+            const dx = pt.clientX - panStartX;
+            const dy = pt.clientY - panStartY;
+            canvasWrap.scrollLeft = scrollLeftStart - dx;
+            canvasWrap.scrollTop = scrollTopStart - dy;
+            e.preventDefault();
+            return;
+        }
+
         if (!selecting) return;
         const pt = getPointerXY(e);
-        const rect = canvas.getBoundingClientRect();
-        const cx = Math.min(Math.max(pt.clientX, rect.left), rect.right) - rect.left;
-        const cy = Math.min(Math.max(pt.clientY, rect.top),  rect.bottom) - rect.top;
-        const sx = startX / canvas.width  * rect.width;
-        const sy = startY / canvas.height * rect.height;
-        selectionBox.style.left   = Math.min(sx, cx) + 'px';
-        selectionBox.style.top    = Math.min(sy, cy) + 'px';
-        selectionBox.style.width  = Math.abs(cx - sx) + 'px';
-        selectionBox.style.height = Math.abs(cy - sy) + 'px';
+        const wrapRect = canvasWrap.getBoundingClientRect();
+        const canvasRect = canvas.getBoundingClientRect();
+
+        const cx = Math.min(Math.max(pt.clientX, canvasRect.left), canvasRect.right);
+        const cy = Math.min(Math.max(pt.clientY, canvasRect.top),  canvasRect.bottom);
+        
+        const startClientX = canvasRect.left + (startX / canvas.width) * canvasRect.width;
+        const startClientY = canvasRect.top + (startY / canvas.height) * canvasRect.height;
+
+        selectionBox.style.left   = (Math.min(startClientX, cx) - wrapRect.left) + 'px';
+        selectionBox.style.top    = (Math.min(startClientY, cy) - wrapRect.top)  + 'px';
+        selectionBox.style.width  = Math.abs(cx - startClientX) + 'px';
+        selectionBox.style.height = Math.abs(cy - startClientY) + 'px';
     }
 
     function endSelect(e) {
+        if (panning) {
+            panning = false;
+            return;
+        }
+
         if (!selecting) return;
         selecting = false;
         selectionBox.style.display = 'none';
@@ -618,15 +682,8 @@
     canvas.addEventListener('mousedown', startSelect);
     window.addEventListener('mousemove', moveSelect);
     window.addEventListener('mouseup', endSelect);
-    
-    // Touch events for canvas with passive: false to allow preventDefault
     canvas.addEventListener('touchstart', startSelect, { passive: false });
-    window.addEventListener('touchmove', e => { 
-        if (selecting) { 
-            e.preventDefault(); // Կանխում է scroll-ը միայն այն ժամանակ, երբ ընտրություն է կատարվում
-            moveSelect(e); 
-        } 
-    }, { passive: false });
+    window.addEventListener('touchmove', e => { if (selecting || panning) { e.preventDefault(); moveSelect(e); } }, { passive: false });
     window.addEventListener('touchend', endSelect);
 
     function addBlurRegion(x, y, w, h) {
@@ -646,7 +703,12 @@
         const patch = document.createElement('canvas');
         patch.width = w;
         patch.height = h;
-        patch.getContext('2d').drawImage(big, pad, pad, w, h, 0, 0, w, h);
+        const pctx = patch.getContext('2d');
+        pctx.drawImage(big, pad, pad, w, h, 0, 0, w, h);
+        
+        const bgColor = getAverageBackgroundColor();
+        pctx.fillStyle = `rgba(${bgColor.r}, ${bgColor.g}, ${bgColor.b}, 0.5)`;
+        pctx.fillRect(0, 0, w, h);
 
         commit(layers.concat([{
             id: nextLayerId++,
@@ -656,15 +718,13 @@
         }]));
     }
 
-    /* ================= Download ================= */
     downloadBtn.addEventListener('click', () => {
         const a = document.createElement('a');
-        a.download = 'blurred-image.png';
+        a.download = 'Blurred-Image.png';
         a.href = canvas.toDataURL('image/png');
         a.click();
     });
 })();
 </script>
-
 </body>
 </html>
