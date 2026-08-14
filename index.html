@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="hy" style="width: 2048px; height: 437px; overflow: hidden;">
+<html lang="hy">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,10 +8,11 @@
     * { box-sizing: border-box; }
 
     html, body {
-        width: 2048px;
-        height: 437px;
+        width: 100%;
+        min-height: 100%;
         margin: 0;
-        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: auto;
     }
 
     body {
@@ -20,7 +21,7 @@
         align-items: center;
         background: #f0f2f5;
         font-family: Verdana, Geneva, Tahoma, sans-serif;
-        padding-bottom: 40px;
+        padding: 0 10px 40px;
     }
 
     header {
@@ -34,7 +35,7 @@
     header h2 { margin: 0; font-size: clamp(1rem, 1rem + 1vw, 1.3rem); color: #222; }
 
     .controls {
-        width: 1080px;
+        width: min(1080px, 100%);
         background: #fff;
         border-radius: 8px;
         box-shadow: 0 2px 10px rgba(0,0,0,.1);
@@ -43,6 +44,7 @@
         gap: 16px;
         align-items: center;
         justify-content: center;
+        flex-wrap: wrap;
         margin-bottom: 24px;
     }
 
@@ -67,8 +69,9 @@
     /* ===== Zoom Bar ===== */
     .zoom-container {
         display: none;
-        width: 1080px;
+        width: min(1080px, 100%);
         justify-content: center;
+        flex-wrap: wrap;
         margin-bottom: 12px;
         gap: 10px;
         align-items: center;
@@ -79,8 +82,8 @@
 
     /* ===== Drop Zone ===== */
     .drop-zone {
-        width: 920px;
-        height: 340px;
+        width: min(920px, 100%);
+        min-height: 340px;
         background: #f7f8fc;
         border: 2px dashed #ccd3e0;
         border-radius: 10px;
@@ -92,10 +95,11 @@
         cursor: pointer;
         transition: border-color .15s, background .15s;
         position: relative;
+        padding: 20px;
     }
     .drop-zone.dragover { border-color: #007bff; background: #eef5ff; }
     .drop-zone svg { margin-bottom: 18px; width: 48px; height: 48px; pointer-events: none; }
-    .drop-zone h2 { margin: 0 0 10px; font-size: 1.2rem; color: #111; pointer-events: none; }
+    .drop-zone h2 { margin: 0 0 10px; font-size: clamp(1rem, 1rem + 1vw, 1.2rem); color: #111; pointer-events: none; }
     .drop-zone p { margin: 0 0 22px; color: #7b8494; font-size: 0.9rem; pointer-events: none; }
 
     #chooseFileBtn {
@@ -119,8 +123,9 @@
     .canvas-wrap { 
         position: relative; 
         line-height: 0; 
-        width: 1080px;
-        height: 1080px;
+        width: min(1080px, 100%);
+        aspect-ratio: 1 / 1;
+        height: auto;
         overflow: hidden; 
         display: flex; 
         align-items: center; 
@@ -141,6 +146,10 @@
 
     #canvas {
         display: block;
+        max-width: 100%;
+        max-height: 100%;
+        width: auto;
+        height: auto;
         transform-origin: center;
         background: #fff;
         touch-action: none;
@@ -163,7 +172,7 @@
         justify-content: center;
         margin-bottom: 12px;
         min-height: 44px;
-        width: 1080px;
+        width: min(1080px, 100%);
     }
     .layers-empty { font-size: .82rem; color: #8a94a4; align-self: center; }
     .layer-chip {
@@ -196,7 +205,7 @@
     .layer-delete:hover { background: #fdecea; }
 
     /* ===== Undo / Redo ===== */
-    .history-bar { display: flex; gap: 12px; margin-top: 14px; margin-bottom: 14px; flex-wrap: wrap; justify-content: center; width: 1080px; }
+    .history-bar { display: flex; gap: 12px; margin-top: 14px; margin-bottom: 14px; flex-wrap: wrap; justify-content: center; width: min(1080px, 100%); }
     .history-bar button { display: inline-flex; align-items: center; gap: 8px; }
     .history-bar svg { flex: 0 0 auto; }
 </style>
@@ -720,9 +729,11 @@
         patch.width = w;
         patch.height = h;
         const pctx = patch.getContext('2d');
+
+        const bgColor = getAverageBackgroundColor();
+        pctx.fillStyle = `rgb(${bgColor.r}, ${bgColor.g}, ${bgColor.b})`;
+        pctx.fillRect(0, 0, w, h);
         pctx.drawImage(big, pad, pad, w, h, 0, 0, w, h);
-        
-        // Removed semi-transparent fill to ensure 100% opaque blur and underlying image not visible
 
         commit(layers.concat([{
             id: nextLayerId++,
